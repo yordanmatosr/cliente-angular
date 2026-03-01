@@ -2,7 +2,8 @@
 
 <!-- Main Exam Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
     [header]="exam?.examName ?? 'Exam'"
     [modal]="true"
     [style]="{ width: '750px' }"
@@ -10,33 +11,34 @@
     [draggable]="false"
     [closable]="false"
 >
-    @if (!isLoaded) {
+    @if (!isLoaded()) {
         <div class="flex justify-center items-center py-16">
             <p-progressspinner />
         </div>
-    } @else if (currentQuestion) {
+    } @else if (currentQuestion()) {
         <div class="flex flex-col gap-4 pt-2">
             <!-- Progress bar -->
             <p-progressbar [value]="progress" [showValue]="false" styleClass="h-2" />
             <div class="flex justify-between text-sm text-muted-color">
-                <span>Question {{ currentQuestion.questionId - limits?.firstQuestionId + 1 }} of {{ limits?.lastQuestionId - limits?.firstQuestionId + 1 }}</span>
+                <span>Question {{ currentQuestion()!.questionId - limits()?.firstQuestionId + 1 }} of {{ limits()?.lastQuestionId - limits()?.firstQuestionId + 1 }}</span>
                 <span>{{ progress }}%</span>
             </div>
 
             <!-- Question text -->
             <div class="font-medium text-base leading-relaxed whitespace-pre-wrap border-l-4 border-primary pl-3">
-                {{ currentQuestion.questionText }}
+                {{ currentQuestion()!.questionText }}
             </div>
 
             <!-- RADIO question -->
             @if (questionType === 'radio') {
                 <div class="flex flex-col gap-2">
-                    @for (opt of currentQuestion.validAnswers; track opt.validAnswerId) {
-                        <div class="flex items-start gap-3 p-2 rounded hover:bg-surface-100 cursor-pointer" (click)="answer = opt.validAnswerId">
+                    @for (opt of currentQuestion()!.validAnswers; track opt.validAnswerId) {
+                        <div class="flex items-start gap-3 p-2 rounded hover:bg-surface-100 cursor-pointer" (click)="answer.set(opt.validAnswerId)">
                             <p-radioButton
-                                [name]="'q' + currentQuestion.questionId"
+                                [name]="'q' + currentQuestion()!.questionId"
                                 [value]="opt.validAnswerId"
-                                [(ngModel)]="answer"
+                                [ngModel]="answer()"
+                                (ngModelChange)="answer.set($event)"
                                 [inputId]="'opt' + opt.validAnswerId"
                             />
                             <label [for]="'opt' + opt.validAnswerId" class="cursor-pointer leading-snug">
@@ -50,7 +52,7 @@
             <!-- CHECK question (multiple select) -->
             @if (questionType === 'check') {
                 <div class="flex flex-col gap-2">
-                    @for (opt of currentQuestion.validAnswers; track opt.validAnswerId) {
+                    @for (opt of currentQuestion()!.validAnswers; track opt.validAnswerId) {
                         <div class="flex items-start gap-3 p-2 rounded hover:bg-surface-100 cursor-pointer" (click)="toggleCheck(opt.validAnswerId, !isChecked(opt.validAnswerId))">
                             <p-checkbox
                                 [binary]="true"
@@ -69,8 +71,9 @@
             <!-- DROP question (single dropdown) -->
             @if (questionType === 'drop') {
                 <p-select
-                    [(ngModel)]="answer"
-                    [options]="currentQuestion.validAnswers"
+                    [ngModel]="answer()"
+                    (ngModelChange)="answer.set($event)"
+                    [options]="currentQuestion()!.validAnswers"
                     optionLabel="validAnswerText"
                     optionValue="validAnswerId"
                     placeholder="Select an answer"
@@ -81,8 +84,9 @@
             <!-- DROP MULTIPLE question -->
             @if (questionType === 'drop-multiple') {
                 <p-multiselect
-                    [(ngModel)]="answer"
-                    [options]="currentQuestion.validAnswers"
+                    [ngModel]="answer()"
+                    (ngModelChange)="answer.set($event)"
+                    [options]="currentQuestion()!.validAnswers"
                     optionLabel="validAnswerText"
                     optionValue="validAnswerId"
                     placeholder="Select all that apply"
@@ -112,7 +116,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @for (va of currentQuestion.validAnswers; track va.validAnswerId) {
+                            @for (va of currentQuestion()!.validAnswers; track va.validAnswerId) {
                                 <tr class="border-b border-surface-200">
                                     <td class="p-2 border border-surface-200">{{ va.validAnswerText }}</td>
                                     <td class="p-2 border border-surface-200">
@@ -144,7 +148,7 @@
                 </div>
             }
 
-            @if (!isAnswered && isLoaded) {
+            @if (!isAnswered && isLoaded()) {
                 <small class="text-orange-500">Please answer before proceeding.</small>
             }
         </div>
@@ -157,13 +161,13 @@
             [outlined]="true"
             (onClick)="onSaveExit()"
         />
-        @if (limits && currentQuestion?.questionId > limits.firstQuestionId) {
+        @if (limits() && currentQuestion()?.questionId > limits()!.firstQuestionId) {
             <p-button
                 label="Previous"
                 icon="pi pi-chevron-left"
                 severity="secondary"
                 (onClick)="onPrevious()"
-                [disabled]="!isLoaded"
+                [disabled]="!isLoaded()"
             />
         }
         @if (!isLastQuestion) {
@@ -172,14 +176,14 @@
                 icon="pi pi-chevron-right"
                 iconPos="right"
                 (onClick)="onNext()"
-                [disabled]="!isLoaded || !isAnswered"
+                [disabled]="!isLoaded() || !isAnswered"
             />
         } @else {
             <p-button
                 label="Complete"
                 icon="pi pi-check"
                 (onClick)="onNext()"
-                [disabled]="!isLoaded || !isAnswered"
+                [disabled]="!isLoaded() || !isAnswered"
             />
         }
     </ng-template>
@@ -187,7 +191,8 @@
 
 <!-- Confirm Submit Dialog -->
 <p-dialog
-    [(visible)]="confirmVisible"
+    [visible]="confirmVisible()"
+    (visibleChange)="confirmVisible.set($event)"
     header="Submit Exam"
     [modal]="true"
     [style]="{ width: '420px' }"
@@ -198,11 +203,11 @@
         You will not be able to change your answers after submission.
     </p>
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="confirmVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="confirmVisible.set(false)" />
         <p-button
             label="Submit Exam"
             icon="pi pi-check"
-            [loading]="submitting"
+            [loading]="submitting()"
             (onClick)="onComplete()"
         />
     </ng-template>

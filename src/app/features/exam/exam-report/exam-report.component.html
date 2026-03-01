@@ -16,14 +16,14 @@
         <span class="text-muted-color text-sm">Report #{{ clinicianAssessmentId }}</span>
     </div>
 
-    @if (loading) {
+    @if (loading()) {
         <div class="flex justify-center py-16">
             <p-progressspinner />
         </div>
     }
 
     <!-- EXAM type report -->
-    @if (!loading && examType === 'exam' && reportData) {
+    @if (!loading() && examType === 'exam' && reportData()) {
         <!-- Organization header -->
         <div class="p-4 bg-surface-50 rounded border flex items-center justify-between">
             <div>
@@ -102,7 +102,7 @@
         </p-card>
 
         <!-- Incorrect answers -->
-        @if (incorrectAnswersList && incorrectAnswersList.length > 0) {
+        @if (incorrectAnswersList().length > 0) {
             <p-card header="Incorrectly Answered Questions">
                 <table class="w-full text-sm border-collapse">
                     <thead>
@@ -112,7 +112,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (q of incorrectAnswersList; track $index) {
+                        @for (q of incorrectAnswersList(); track $index) {
                             <tr class="border-b border-surface-200">
                                 <td class="p-3 border border-surface-200">
                                     <pre class="whitespace-pre-wrap font-sans text-sm m-0">{{ q.question_text }}</pre>
@@ -129,14 +129,14 @@
     }
 
     <!-- CHECKLIST type report -->
-    @if (!loading && examType === 'checklist' && checklistData) {
+    @if (!loading() && examType === 'checklist' && checklistData()) {
         <p-card header="Checklist Report">
-            <pre class="whitespace-pre-wrap font-sans text-sm">{{ checklistData | json }}</pre>
+            <pre class="whitespace-pre-wrap font-sans text-sm">{{ checklistData() | json }}</pre>
         </p-card>
     }
 
     <!-- FORM / GUIDED type report -->
-    @if (!loading && (examType === 'form' || examType === 'guided' || examType === 'guided_selling') && reportData) {
+    @if (!loading() && (examType === 'form' || examType === 'guided' || examType === 'guided_selling') && reportData()) {
         <p-card [header]="exam?.examName ?? 'Report'">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <table class="text-sm w-full">

@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -26,16 +27,17 @@ export class ExamReportComponent implements OnInit {
     private location = inject(Location);
     private examService = inject(ExamService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
     examId = 0;
     userId = 0;
     clinicianAssessmentId = 0;
     examType = '';
 
-    loading = true;
-    reportData: any = null;
-    incorrectAnswersList: any[] = [];
-    checklistData: any = null;
+    loading = signal(true);
+    reportData = signal<any>(null);
+    incorrectAnswersList = signal<any[]>([]);
+    checklistData = signal<any>(null);
 
     ngOnInit() {
         this.examId = +this.route.snapshot.paramMap.get('examId')!;
@@ -46,32 +48,36 @@ export class ExamReportComponent implements OnInit {
     }
 
     private loadReport() {
-        this.loading = true;
+        this.loading.set(true);
         if (this.examType === 'checklist') {
-            this.examService.reportChecklist(this.examId, this.userId, this.clinicianAssessmentId).subscribe({
-                next: (data: any) => {
-                    this.checklistData = data;
-                    this.loading = false;
-                },
-                error: (err: any) => { this.showError(err); this.loading = false; }
-            });
+            this.examService.reportChecklist(this.examId, this.userId, this.clinicianAssessmentId)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (data: any) => {
+                        this.checklistData.set(data);
+                        this.loading.set(false);
+                    },
+                    error: (err: any) => { this.showError(err); this.loading.set(false); }
+                });
         } else {
-            this.examService.reportExam(this.examId, this.userId, this.clinicianAssessmentId).subscribe({
-                next: (data: any) => {
-                    this.reportData = data.reportData ?? data;
-                    this.incorrectAnswersList = data.incorrectAnswersList ?? [];
-                    this.loading = false;
-                },
-                error: (err: any) => { this.showError(err); this.loading = false; }
-            });
+            this.examService.reportExam(this.examId, this.userId, this.clinicianAssessmentId)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (data: any) => {
+                        this.reportData.set(data.reportData ?? data);
+                        this.incorrectAnswersList.set(data.incorrectAnswersList ?? []);
+                        this.loading.set(false);
+                    },
+                    error: (err: any) => { this.showError(err); this.loading.set(false); }
+                });
         }
     }
 
-    get clinician(): any { return this.reportData?.userClinician; }
-    get score(): number { return this.reportData?.groupscore ?? 0; }
-    get passingScore(): number { return this.reportData?.passingScore ?? 0; }
-    get exam(): any { return this.reportData?.exam; }
-    get dateCompleted(): string { return this.reportData?.dateCompleted ?? ''; }
+    get clinician(): any { return this.reportData()?.userClinician; }
+    get score(): number { return this.reportData()?.groupscore ?? 0; }
+    get passingScore(): number { return this.reportData()?.passingScore ?? 0; }
+    get exam(): any { return this.reportData()?.exam; }
+    get dateCompleted(): string { return this.reportData()?.dateCompleted ?? ''; }
     get organization(): any { return this.clinician?.department?.organization; }
     get passed(): boolean { return this.score >= this.passingScore; }
 
