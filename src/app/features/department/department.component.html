@@ -15,8 +15,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="departments"
-    [loading]="loading"
+    [value]="departments()"
+    [loading]="loading()"
     dataKey="departmentId"
     [globalFilterFields]="['departmentName', 'description', 'organization.organizationName']"
     [paginator]="true"
@@ -72,8 +72,9 @@
 
 <!-- Create / Edit Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
-    [header]="editMode ? 'Edit Department' : 'New Department'"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="editMode() ? 'Edit Department' : 'New Department'"
     [modal]="true"
     [style]="{ width: '480px' }"
     [breakpoints]="{ '768px': '95vw' }"
@@ -85,12 +86,12 @@
             <input pInputText [(ngModel)]="form.departmentName" maxlength="254" />
         </div>
 
-        @if (isSuper) {
+        @if (isSuper()) {
             <div class="flex flex-col gap-1">
                 <label class="font-medium">Company <span class="text-red-400">*</span></label>
                 <p-select
                     [(ngModel)]="form.organizationId"
-                    [options]="organizations"
+                    [options]="organizations()"
                     optionLabel="organizationName"
                     optionValue="organizationId"
                     placeholder="Select company"
@@ -106,12 +107,12 @@
     </div>
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
         <p-button
-            [label]="editMode ? 'Update' : 'Add'"
+            [label]="editMode() ? 'Update' : 'Add'"
             icon="pi pi-check"
             (onClick)="save()"
-            [disabled]="!form.departmentName?.trim() || (isSuper && !form.organizationId)"
+            [disabled]="!form.departmentName?.trim() || (isSuper() && !form.organizationId)"
         />
     </ng-template>
 </p-dialog>

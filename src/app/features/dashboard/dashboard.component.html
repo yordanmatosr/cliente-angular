@@ -1,30 +1,30 @@
-@if (loading) {
+@if (loading()) {
     <div class="flex justify-center py-16">
         <p-progressspinner />
     </div>
 }
 
 <!-- Admin / superadmin / super view -->
-@if (!loading && isAdmin) {
+@if (!loading() && isAdmin()) {
     <!-- Summary cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
             <div class="text-muted-color text-sm font-medium mb-3">Total Employees Tested</div>
-            <div class="text-4xl font-bold text-primary">{{ adminSummary?.testedEmployee ?? 0 }}</div>
+            <div class="text-4xl font-bold text-primary">{{ adminSummary()?.testedEmployee ?? 0 }}</div>
         </div>
 
         <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
             <div class="text-muted-color text-sm font-medium mb-3">Pending Assessments</div>
             <div class="text-4xl font-bold" style="color: var(--p-orange-500)">
-                {{ adminSummary?.pendingAssessment ?? 0 }}
+                {{ adminSummary()?.pendingAssessment ?? 0 }}
             </div>
         </div>
 
         <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
             <div class="text-muted-color text-sm font-medium mb-3">Completed Assessments</div>
-            <div class="text-4xl font-bold text-green-600">{{ adminSummary?.completedAssessment ?? 0 }}</div>
-            @if (completedSinceLogin > 0) {
-                <div class="text-xs text-green-600 mt-2">+{{ completedSinceLogin }} since last login</div>
+            <div class="text-4xl font-bold text-green-600">{{ adminSummary()?.completedAssessment ?? 0 }}</div>
+            @if (completedSinceLogin() > 0) {
+                <div class="text-xs text-green-600 mt-2">+{{ completedSinceLogin() }} since last login</div>
             }
         </div>
     </div>
@@ -32,7 +32,7 @@
     <!-- Assessment stats table + Specialty chart -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <p-card header="Assessment Statistics">
-            <p-table [value]="assessmentStats" styleClass="p-datatable-sm">
+            <p-table [value]="assessmentStats()" styleClass="p-datatable-sm">
                 <ng-template #header>
                     <tr>
                         <th>Specialty</th>
@@ -68,23 +68,23 @@
             </p-table>
         </p-card>
 
-        @if (specialtyChartData && specialtyChartData.labels.length > 0) {
+        @if (specialtyChartData() && specialtyChartData().labels.length > 0) {
             <p-card header="Clinicians by Specialty">
-                <p-chart type="doughnut" [data]="specialtyChartData" [options]="specialtyChartOptions" height="300" />
+                <p-chart type="doughnut" [data]="specialtyChartData()" [options]="specialtyChartOptions()" height="300" />
             </p-card>
         }
     </div>
 }
 
 <!-- User / kiosk view -->
-@if (!loading && !isAdmin) {
+@if (!loading() && !isAdmin()) {
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div
             class="stat-card p-5 bg-surface-0 border border-surface-200 rounded-xl text-center cursor-pointer"
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">Total</div>
-            <div class="text-4xl font-bold">{{ userSummary?.countTotal ?? 0 }}</div>
+            <div class="text-4xl font-bold">{{ userSummary()?.countTotal ?? 0 }}</div>
         </div>
 
         <div
@@ -92,7 +92,7 @@
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">New</div>
-            <div class="text-4xl font-bold text-primary">{{ userSummary?.countNew ?? 0 }}</div>
+            <div class="text-4xl font-bold text-primary">{{ userSummary()?.countNew ?? 0 }}</div>
         </div>
 
         <div
@@ -101,7 +101,7 @@
         >
             <div class="text-muted-color text-xs font-medium mb-2">In Progress</div>
             <div class="text-4xl font-bold" style="color: var(--p-orange-500)">
-                {{ userSummary?.countInprogress ?? 0 }}
+                {{ userSummary()?.countInprogress ?? 0 }}
             </div>
         </div>
 
@@ -110,7 +110,7 @@
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">Completed</div>
-            <div class="text-4xl font-bold text-green-600">{{ userSummary?.countCompleted ?? 0 }}</div>
+            <div class="text-4xl font-bold text-green-600">{{ userSummary()?.countCompleted ?? 0 }}</div>
         </div>
     </div>
 

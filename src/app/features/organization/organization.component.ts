@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +21,7 @@ import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
 import { OrganizationService } from '../../core/services/organization.service';
 import { FileService } from '../../core/services/file.service';
 import { EmailService } from '../../core/services/email.service';
+import { MAX_LOGO_SIZE_BYTES } from '../../core/constants/status.constants';
 
 @Component({
     selector: 'app-organization',
@@ -44,30 +46,30 @@ export class OrganizationComponent implements OnInit {
     private emailService = inject(EmailService);
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    organizations: any[] = [];
-    loading = true;
+    organizations = signal<any[]>([]);
+    loading = signal(true);
 
     // Form dialog
-    dialogVisible = false;
-    editMode = false;
+    dialogVisible = signal(false);
+    editMode = signal(false);
     form: any = this.emptyForm();
-    subscriptionModels: { label: string; value: string }[] = [];
-    logoPreview: string | null = null;
+    subscriptionModels = signal<{ label: string; value: string }[]>([]);
+    logoPreview = signal<string | null>(null);
     logoFile: File | null = null;
 
     // Exam URLs dialog
-    examUrlDialogVisible = false;
-    selectedOrg: any = null;
-    examList: any[] = [];
-    examUrlLoading = false;
+    examUrlDialogVisible = signal(false);
+    selectedOrg = signal<any>(null);
+    examList = signal<any[]>([]);
+    examUrlLoading = signal(false);
 
     // Send email dialog
-    sendEmailDialogVisible = false;
+    sendEmailDialogVisible = signal(false);
     emailAddress = '';
-    sendingEmail = false;
+    sendingEmail = signal(false);
 
-    // Actions menu (single shared instance)
     menuItems: MenuItem[] = [];
 
     ngOnInit() {
@@ -76,67 +78,67 @@ export class OrganizationComponent implements OnInit {
     }
 
     loadOrganizations() {
-        this.loading = true;
-        this.orgService.all().subscribe({
-            next: (data: any[]) => {
-                this.organizations = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.orgService.all()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.organizations.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     loadSubscriptionModels() {
-        this.orgService.organizationModel().subscribe({
-            next: (data: any[]) => {
-                this.subscriptionModels = data.map((m: any) => ({
-                    label: m.organizationModelValue,
-                    value: m.organizationModelText
-                }));
-            }
-        });
+        this.orgService.organizationModel()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => {
+                    this.subscriptionModels.set(data.map((m: any) => ({
+                        label: m.organizationModelValue,
+                        value: m.organizationModelText
+                    })));
+                }
+            });
     }
 
     // --- CRUD ---
 
     openCreate() {
         this.form = this.emptyForm();
-        this.logoPreview = null;
+        this.logoPreview.set(null);
         this.logoFile = null;
-        this.editMode = false;
-        this.dialogVisible = true;
+        this.editMode.set(false);
+        this.dialogVisible.set(true);
     }
 
     openEdit(org: any) {
         this.form = { ...org };
-        this.logoPreview = null;
+        this.logoPreview.set(null);
         this.logoFile = null;
-        this.editMode = true;
-        this.fileService.getOrganizationLogo(org.organizationId).subscribe({
-            next: (blob: Blob) => {
-                if (blob.size > 0) this.logoPreview = URL.createObjectURL(blob);
-            }
-        });
-        this.dialogVisible = true;
+        this.editMode.set(true);
+        this.fileService.getOrganizationLogo(org.organizationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (blob: Blob) => {
+                    if (blob.size > 0) this.logoPreview.set(URL.createObjectURL(blob));
+                }
+            });
+        this.dialogVisible.set(true);
     }
 
     save() {
-        const request = this.editMode
+        const request = this.editMode()
             ? this.orgService.update(this.form)
             : this.orgService.create(this.form);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 this.uploadLogoIfSelected(data.organizationId ?? this.form.organizationId);
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editMode ? 'Updated' : 'Created',
-                    detail: `${data.organizationName} ${this.editMode ? 'updated' : 'saved'}`
+                    summary: this.editMode() ? 'Updated' : 'Created',
+                    detail: `${data.organizationName} ${this.editMode() ? 'updated' : 'saved'}`
                 });
-                this.dialogVisible = false;
+                this.dialogVisible.set(false);
                 this.loadOrganizations();
             },
             error: (err: any) => this.showError(err)
@@ -151,25 +153,29 @@ export class OrganizationComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.orgService.delete(org.organizationId).subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Company deleted' });
-                        this.loadOrganizations();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.orgService.delete(org.organizationId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Company deleted' });
+                            this.loadOrganizations();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }
 
     toggleDisable(org: any) {
-        this.orgService.updateIsDisabled(org.organizationId).subscribe({
-            next: (data: any) => {
-                this.messageService.add({ severity: 'success', summary: 'Updated', detail: data.message });
-                this.loadOrganizations();
-            },
-            error: (err: any) => this.showError(err)
-        });
+        this.orgService.updateIsDisabled(org.organizationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => {
+                    this.messageService.add({ severity: 'success', summary: 'Updated', detail: data.message });
+                    this.loadOrganizations();
+                },
+                error: (err: any) => this.showError(err)
+            });
     }
 
     // --- Logo ---
@@ -177,65 +183,62 @@ export class OrganizationComponent implements OnInit {
     onLogoSelect(event: Event) {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
-        if (file.size > 400 * 1024) {
+        if (file.size > MAX_LOGO_SIZE_BYTES) {
             this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Logo must be less than 400kb' });
             return;
         }
         this.logoFile = file;
-        this.logoPreview = URL.createObjectURL(file);
+        this.logoPreview.set(URL.createObjectURL(file));
     }
 
     private uploadLogoIfSelected(organizationId: number) {
         if (!this.logoFile) return;
-        this.fileService.uploadLogo(this.logoFile, organizationId, false).subscribe({
-            next: (data: any) => this.messageService.add({ severity: 'success', summary: 'Logo saved', detail: data.message }),
-            error: (err: any) => this.showError(err)
-        });
+        this.fileService.uploadLogo(this.logoFile, organizationId, false)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => this.messageService.add({ severity: 'success', summary: 'Logo saved', detail: data.message }),
+                error: (err: any) => this.showError(err)
+            });
     }
 
     // --- Exam URLs ---
 
     openExamUrls(org: any) {
-        this.selectedOrg = org;
-        this.examList = [];
-        this.examUrlLoading = true;
-        this.examUrlDialogVisible = true;
-        this.orgService.urlencryptedlist(org.organizationId).subscribe({
-            next: (data: any[]) => {
-                this.examList = data;
-                this.examUrlLoading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.examUrlLoading = false;
-            }
-        });
+        this.selectedOrg.set(org);
+        this.examList.set([]);
+        this.examUrlLoading.set(true);
+        this.examUrlDialogVisible.set(true);
+        this.orgService.urlencryptedlist(org.organizationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.examList.set(data); this.examUrlLoading.set(false); },
+                error: (err: any) => { this.showError(err); this.examUrlLoading.set(false); }
+            });
     }
 
     openSendEmail() {
         this.emailAddress = '';
-        this.sendEmailDialogVisible = true;
+        this.sendEmailDialogVisible.set(true);
     }
 
     sendEmail() {
-        if (!this.emailAddress || !this.selectedOrg) return;
-        this.sendingEmail = true;
+        if (!this.emailAddress || !this.selectedOrg()) return;
+        this.sendingEmail.set(true);
         this.buildPdfBlob().then(blob => {
             this.emailService.sendAttachmentEmail(
                 blob as File,
                 this.emailAddress,
-                `${this.selectedOrg.organizationName}_report.pdf`,
-                this.selectedOrg.organizationName
-            ).subscribe({
+                `${this.selectedOrg()!.organizationName}_report.pdf`,
+                this.selectedOrg()!.organizationName
+            )
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
                 next: (data: any) => {
                     this.messageService.add({ severity: 'success', summary: 'Sent', detail: data.message });
-                    this.sendEmailDialogVisible = false;
-                    this.sendingEmail = false;
+                    this.sendEmailDialogVisible.set(false);
+                    this.sendingEmail.set(false);
                 },
-                error: (err: any) => {
-                    this.showError(err);
-                    this.sendingEmail = false;
-                }
+                error: (err: any) => { this.showError(err); this.sendingEmail.set(false); }
             });
         });
     }
@@ -243,7 +246,7 @@ export class OrganizationComponent implements OnInit {
     async downloadPdf() {
         const { default: jsPDF } = await import('jspdf');
         const doc = this.buildPdfDoc(jsPDF);
-        doc.save(`${this.selectedOrg.organizationName}_report.pdf`);
+        doc.save(`${this.selectedOrg()!.organizationName}_report.pdf`);
     }
 
     private async buildPdfBlob(): Promise<Blob> {
@@ -252,14 +255,16 @@ export class OrganizationComponent implements OnInit {
     }
 
     private buildPdfDoc(jsPDF: any) {
+        const org = this.selectedOrg()!;
+        const exams = this.examList();
         const doc = new jsPDF({ orientation: 'p', unit: 'cm', format: 'a4', compress: true, putOnlyUsedFonts: true });
         let x = 1.5, y = 2;
         const pageHeight = doc.internal.pageSize.height - 3.0;
-        doc.setFontSize(11).setFont(undefined, 'bold').text(this.selectedOrg.organizationName, x, y, { maxWidth: 18 });
+        doc.setFontSize(11).setFont(undefined, 'bold').text(org.organizationName, x, y, { maxWidth: 18 });
         y = 3;
         doc.setFontSize(9).setFont(undefined, 'bold').text("Exam's links", x, y, { maxWidth: 8 });
         y += 0.8;
-        for (const exam of this.examList) {
+        for (const exam of exams) {
             doc.setFontSize(9).setFont(undefined, 'normal').setTextColor(0, 0, 0)
                 .textWithLink(exam.examName, x, y, { maxWidth: 18, url: exam.url });
             y += 0.5;
@@ -271,13 +276,9 @@ export class OrganizationComponent implements OnInit {
         return doc;
     }
 
-    // --- Table filter ---
-
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
     }
-
-    // --- Actions menu ---
 
     setMenuItems(org: any) {
         this.menuItems = [
@@ -288,8 +289,6 @@ export class OrganizationComponent implements OnInit {
             { label: org.isDisabled ? 'Enable' : 'Disable', icon: org.isDisabled ? 'pi pi-check-circle' : 'pi pi-ban', command: () => this.toggleDisable(org) }
         ];
     }
-
-    // --- Helpers ---
 
     private emptyForm() {
         return { organizationId: 0, organizationName: '', location: '', description: '', orgSubscriptionModel: '', isLogo: false };

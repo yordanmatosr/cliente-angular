@@ -1,7 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
 
 export interface CurrentUser {
@@ -20,29 +21,30 @@ export class AuthService {
     private http = inject(HttpClient);
     private router = inject(Router);
 
-    private currentUserSubject = new BehaviorSubject<CurrentUser | null>(this.loadFromStorage());
-    currentUser$ = this.currentUserSubject.asObservable();
+    private readonly _currentUser = signal<CurrentUser | null>(this.loadFromStorage());
 
-    get currentUser(): CurrentUser | null {
-        return this.currentUserSubject.value;
-    }
+    /** Signal reactivo — úsalo en templates y efectos */
+    readonly currentUser = this._currentUser.asReadonly();
+
+    /** Observable para compatibilidad con interceptor y guards */
+    readonly currentUser$ = toObservable(this._currentUser);
 
     get token(): string | null {
-        return this.currentUser?.accessToken ?? null;
+        return this._currentUser()?.accessToken ?? null;
     }
 
     isLoggedIn(): boolean {
-        return !!this.currentUser && !this.isTokenExpired();
+        return !!this._currentUser() && !this.isTokenExpired();
     }
 
     isTokenExpired(): boolean {
-        const user = this.currentUser;
+        const user = this._currentUser();
         if (!user) return true;
         return Date.now() > user.jwtExpirationMs;
     }
 
     hasRole(...roles: string[]): boolean {
-        return roles.some(role => this.currentUser?.roles?.includes(role));
+        return roles.some(role => this._currentUser()?.roles?.includes(role));
     }
 
     // Returns the raw response — may be a full CurrentUser (accessToken present)
@@ -107,7 +109,7 @@ export class AuthService {
 
     clearUser(): void {
         localStorage.removeItem(STORAGE_KEY);
-        this.currentUserSubject.next(null);
+        this._currentUser.set(null);
     }
 
     logout(): void {
@@ -117,7 +119,7 @@ export class AuthService {
 
     private saveUser(user: CurrentUser): void {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        this.currentUserSubject.next(user);
+        this._currentUser.set(user);
     }
 
     private loadFromStorage(): CurrentUser | null {

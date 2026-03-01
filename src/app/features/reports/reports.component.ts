@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,6 +18,7 @@ import { ExamService } from '../../core/services/exam.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ROLE } from '../../core/constants/roles.constants';
 
 type PeriodType = 'day' | 'week' | 'month';
 
@@ -43,75 +45,79 @@ export class ReportsComponent implements OnInit {
     private authService = inject(AuthService);
     private messageService = inject(MessageService);
     private router = inject(Router);
+    private destroyRef = inject(DestroyRef);
 
-    isSuper = false;
-    organizations: any[] = [];
-    orgsLoading = false;
-    selectedOrgId: number | null = null;
-    selectedOrgName = '';
-    periodType: PeriodType = 'day';
-    reportData: any[] = [];
-    reportLoading = false;
+    isSuper = signal(false);
+    organizations = signal<any[]>([]);
+    orgsLoading = signal(false);
+    selectedOrgId = signal<number | null>(null);
+    selectedOrgName = signal('');
+    periodType = signal<PeriodType>('day');
+    reportData = signal<any[]>([]);
+    reportLoading = signal(false);
 
     readonly PERIODS: { value: PeriodType; label: string; icon: string; color: string }[] = [
-        { value: 'day',   label: 'Last Day',   icon: 'pi pi-calendar',     color: 'info' },
-        { value: 'week',  label: 'Last Week',  icon: 'pi pi-calendar-plus', color: 'warn' },
+        { value: 'day',   label: 'Last Day',   icon: 'pi pi-calendar',      color: 'info' },
+        { value: 'week',  label: 'Last Week',  icon: 'pi pi-calendar-plus',  color: 'warn' },
         { value: 'month', label: 'Last Month', icon: 'pi pi-calendar-times', color: 'success' }
     ];
 
     ngOnInit() {
-        const user = this.authService.currentUser!;
-        this.isSuper = user.roles[0] === 'super';
+        const user = this.authService.currentUser()!;
+        this.isSuper.set(this.authService.hasRole(ROLE.SUPER));
 
-        if (this.isSuper) {
+        if (this.isSuper()) {
             this.loadOrganizations();
         } else {
-            this.userService.find(user.id).subscribe({
-                next: (data: any) => {
-                    this.selectedOrgId = data.department?.organization?.organizationId ?? null;
-                    this.selectedOrgName = data.department?.organization?.organizationName ?? '';
-                    if (this.selectedOrgId) this.loadReport();
-                },
-                error: (err: any) => this.showError(err)
-            });
+            this.userService.find(user.id)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (data: any) => {
+                        this.selectedOrgId.set(data.department?.organization?.organizationId ?? null);
+                        this.selectedOrgName.set(data.department?.organization?.organizationName ?? '');
+                        if (this.selectedOrgId()) this.loadReport();
+                    },
+                    error: (err: any) => this.showError(err)
+                });
         }
     }
 
     private loadOrganizations() {
-        this.orgsLoading = true;
-        this.orgService.all().subscribe({
-            next: (data: any[]) => {
-                this.organizations = data;
-                this.orgsLoading = false;
-                if (data.length && !this.selectedOrgId) {
-                    this.selectOrg(data[0]);
-                }
-            },
-            error: (err: any) => { this.showError(err); this.orgsLoading = false; }
-        });
+        this.orgsLoading.set(true);
+        this.orgService.all()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => {
+                    this.organizations.set(data);
+                    this.orgsLoading.set(false);
+                    if (data.length && !this.selectedOrgId()) {
+                        this.selectOrg(data[0]);
+                    }
+                },
+                error: (err: any) => { this.showError(err); this.orgsLoading.set(false); }
+            });
     }
 
     selectOrg(org: any) {
-        this.selectedOrgId = org.organizationId;
-        this.selectedOrgName = org.organizationName;
+        this.selectedOrgId.set(org.organizationId);
+        this.selectedOrgName.set(org.organizationName);
         this.loadReport();
     }
 
     selectPeriod(period: PeriodType) {
-        this.periodType = period;
-        if (this.selectedOrgId) this.loadReport();
+        this.periodType.set(period);
+        if (this.selectedOrgId()) this.loadReport();
     }
 
     private loadReport() {
-        if (!this.selectedOrgId) return;
-        this.reportLoading = true;
-        this.examService.orgReporting(this.selectedOrgId, this.periodType).subscribe({
-            next: (data: any[]) => {
-                this.reportData = data;
-                this.reportLoading = false;
-            },
-            error: (err: any) => { this.showError(err); this.reportLoading = false; }
-        });
+        if (!this.selectedOrgId()) return;
+        this.reportLoading.set(true);
+        this.examService.orgReporting(this.selectedOrgId()!, this.periodType())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.reportData.set(data); this.reportLoading.set(false); },
+                error: (err: any) => { this.showError(err); this.reportLoading.set(false); }
+            });
     }
 
     showReport(row: any) {
@@ -149,9 +155,8 @@ export class ReportsComponent implements OnInit {
         return this.PERIODS.find(x => x.value === p)?.label ?? p;
     }
 
-    // ---- CSV export ----
     downloadCsv() {
-        const rows = this.reportData;
+        const rows = this.reportData();
         if (!rows.length) return;
         const today = new Date().toISOString().slice(0, 10);
         const headers = ['Fullname', 'Department', 'Exam', 'Score %'];
@@ -171,12 +176,11 @@ export class ReportsComponent implements OnInit {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${this.selectedOrgName}_${today}_${this.periodType}.csv`;
+        link.download = `${this.selectedOrgName()}_${today}_${this.periodType()}.csv`;
         link.click();
         URL.revokeObjectURL(url);
     }
 
-    // ---- PDF export ----
     async downloadPdf(forPrint = false) {
         const jsPDF = (await import('jspdf')).default;
         const report = new jsPDF({ orientation: 'p', unit: 'cm', format: 'a4', compress: true });
@@ -184,9 +188,9 @@ export class ReportsComponent implements OnInit {
         let x = 1.5, y = 2;
 
         report.setFontSize(11).setFont(undefined as any, 'bold')
-            .text(this.selectedOrgName, x, y, { maxWidth: 18 });
+            .text(this.selectedOrgName(), x, y, { maxWidth: 18 });
         report.setFontSize(10).setFont(undefined as any, 'normal')
-            .text(`${this.periodLabel(this.periodType)} — ${today}`, x, y + 0.6, { maxWidth: 18 });
+            .text(`${this.periodLabel(this.periodType())} — ${today}`, x, y + 0.6, { maxWidth: 18 });
 
         y = 4;
         const bold = (s: string, px: number, py: number, align: 'left' | 'right' | 'center' = 'left', maxW = 5) =>
@@ -195,7 +199,7 @@ export class ReportsComponent implements OnInit {
         bold('Fullname', 1.5, y); bold('Department', 7, y); bold('Exam', 12, y); bold('Score %', 20, y, 'right', 3);
 
         const pageH = report.internal.pageSize.height - 1.5;
-        for (const row of this.reportData) {
+        for (const row of this.reportData()) {
             y += 0.7;
             if (y >= pageH) { report.addPage(); y = 2; }
             const score = row.examTypeDesc === 'Exam'
@@ -212,7 +216,7 @@ export class ReportsComponent implements OnInit {
             report.autoPrint({ variant: 'non-conform' });
             window.open(URL.createObjectURL(report.output('blob')));
         } else {
-            report.save(`${this.selectedOrgName}_${this.periodType}_report.pdf`);
+            report.save(`${this.selectedOrgName()}_${this.periodType()}_report.pdf`);
         }
     }
 

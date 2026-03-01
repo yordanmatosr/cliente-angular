@@ -15,8 +15,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="clinicians"
-    [loading]="loading"
+    [value]="clinicians()"
+    [loading]="loading()"
     dataKey="clinicianId"
     [globalFilterFields]="['userResponse.firstname', 'userResponse.lastname', 'userResponse.email', 'userResponse.username']"
     [paginator]="true"
@@ -75,14 +75,15 @@
 
 <!-- Create / Edit Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
-    [header]="editMode ? 'Edit Clinician' : 'New Clinician'"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="editMode() ? 'Edit Clinician' : 'New Clinician'"
     [modal]="true"
     [style]="{ width: '720px' }"
     [breakpoints]="{ '768px': '95vw' }"
     [draggable]="false"
 >
-    @if (optionsLoading) {
+    @if (optionsLoading()) {
         <div class="flex justify-center py-8">
             <p-progressspinner />
         </div>
@@ -117,7 +118,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="font-medium">
-                        Password @if (!editMode) { <span class="text-red-400">*</span> }
+                        Password @if (!editMode()) { <span class="text-red-400">*</span> }
                     </label>
                     <p-password
                         [(ngModel)]="form.password"
@@ -135,7 +136,7 @@
                     <label class="font-medium">Company <span class="text-red-400">*</span></label>
                     <p-select
                         [(ngModel)]="form.organizationId"
-                        [options]="allOrganizations"
+                        [options]="allOrganizations()"
                         optionLabel="organizationName"
                         optionValue="organizationId"
                         placeholder="Select company"
@@ -147,7 +148,7 @@
                     <label class="font-medium">Department <span class="text-red-400">*</span></label>
                     <p-select
                         [(ngModel)]="form.department"
-                        [options]="filteredDepartments"
+                        [options]="filteredDepartments()"
                         optionLabel="departmentName"
                         optionValue="departmentId"
                         placeholder="Select department"
@@ -167,7 +168,7 @@
                     <label class="font-medium">Type <span class="text-red-400">*</span></label>
                     <p-select
                         [(ngModel)]="form.typeId"
-                        [options]="clinicianTypes"
+                        [options]="clinicianTypes()"
                         optionLabel="typeName"
                         optionValue="typeId"
                         placeholder="Select type"
@@ -178,7 +179,7 @@
                     <label class="font-medium">Specialties</label>
                     <p-multiselect
                         [(ngModel)]="form.specialtiesRequest"
-                        [options]="specialties"
+                        [options]="specialties()"
                         optionLabel="specialtyDescription"
                         optionValue="specialtyId"
                         placeholder="Select specialties"
@@ -198,12 +199,12 @@
     }
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
         <p-button
-            [label]="editMode ? 'Update' : 'Add'"
+            [label]="editMode() ? 'Update' : 'Add'"
             icon="pi pi-check"
             (onClick)="save()"
-            [disabled]="optionsLoading || !canSave"
+            [disabled]="optionsLoading() || !canSave"
         />
     </ng-template>
 </p-dialog>

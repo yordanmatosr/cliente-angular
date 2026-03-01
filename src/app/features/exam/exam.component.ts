@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +20,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ExamService } from '../../core/services/exam.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ExamDialogComponent } from './exam-dialog/exam-dialog.component';
+import { EXAM_STATUS, EXAM_STATUS_SEVERITY } from '../../core/constants/status.constants';
 
 @Component({
     selector: 'app-exam',
@@ -42,51 +44,46 @@ export class ExamComponent implements OnInit {
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
     private router = inject(Router);
+    private destroyRef = inject(DestroyRef);
 
-    exams: any[] = [];
-    loading = true;
+    exams = signal<any[]>([]);
+    loading = signal(true);
     userId = 0;
 
-    // Terms dialog
-    termsVisible = false;
+    termsVisible = signal(false);
     termsAccepted = false;
     pendingExam: any = null;
 
-    // Exam dialog
-    examDialogVisible = false;
-    currentExam: any = null;
+    examDialogVisible = signal(false);
+    currentExam = signal<any>(null);
 
     ngOnInit() {
-        this.userId = this.authService.currentUser!.id;
+        this.userId = this.authService.currentUser()!.id;
         this.loadExams();
     }
 
     loadExams() {
-        this.loading = true;
-        this.examService.allByUserFiltered(this.userId, null).subscribe({
-            next: (data: any[]) => {
-                this.exams = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.examService.allByUserFiltered(this.userId, null)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.exams.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     onPlay(exam: any) {
-        if (exam.status?.toLowerCase() === 'new') {
+        if (exam.status?.toLowerCase() === EXAM_STATUS.NEW) {
             this.pendingExam = exam;
             this.termsAccepted = false;
-            this.termsVisible = true;
+            this.termsVisible.set(true);
         } else {
             this.openExamDialog(exam);
         }
     }
 
     acceptTerms() {
-        this.termsVisible = false;
+        this.termsVisible.set(false);
         if (this.pendingExam) {
             this.openExamDialog(this.pendingExam);
             this.pendingExam = null;
@@ -94,13 +91,13 @@ export class ExamComponent implements OnInit {
     }
 
     openExamDialog(exam: any) {
-        this.currentExam = exam;
-        this.examDialogVisible = true;
+        this.currentExam.set(exam);
+        this.examDialogVisible.set(true);
     }
 
     onExamDialogClose(changed: boolean) {
-        this.examDialogVisible = false;
-        this.currentExam = null;
+        this.examDialogVisible.set(false);
+        this.currentExam.set(null);
         if (changed) this.loadExams();
     }
 
@@ -117,35 +114,31 @@ export class ExamComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.examService.alterExam(exam.clinicianAssessmentId, this.userId, 'delete').subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Exam deleted' });
-                        this.loadExams();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.examService.alterExam(exam.clinicianAssessmentId, this.userId, 'delete')
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Exam deleted' });
+                            this.loadExams();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }
 
     statusSeverity(status: string): 'info' | 'warn' | 'success' | 'danger' | 'secondary' {
-        switch (status?.toLowerCase()) {
-            case 'new': return 'info';
-            case 'initiated':
-            case 'in progress': return 'warn';
-            case 'complete': return 'success';
-            default: return 'secondary';
-        }
+        return (EXAM_STATUS_SEVERITY[status?.toLowerCase()] ?? 'secondary') as any;
     }
 
     canPlay(exam: any): boolean {
         const status = exam.status?.toLowerCase();
-        return (status === 'new' || status === 'initiated' || status === 'in progress')
+        return (status === EXAM_STATUS.NEW || status === EXAM_STATUS.INITIATED || status === EXAM_STATUS.IN_PROGRESS)
             && exam.examQuestionCount > 1;
     }
 
     isComplete(exam: any): boolean {
-        return exam.status?.toLowerCase() === 'complete';
+        return exam.status?.toLowerCase() === EXAM_STATUS.COMPLETE;
     }
 
     checklistScore(exam: any): string {

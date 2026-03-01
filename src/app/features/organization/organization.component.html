@@ -15,8 +15,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="organizations"
-    [loading]="loading"
+    [value]="organizations()"
+    [loading]="loading()"
     dataKey="organizationId"
     [globalFilterFields]="['organizationName', 'location', 'description']"
     [paginator]="true"
@@ -78,8 +78,9 @@
 
 <!-- Create / Edit Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
-    [header]="editMode ? 'Edit Company' : 'New Company'"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="editMode() ? 'Edit Company' : 'New Company'"
     [modal]="true"
     [style]="{ width: '640px' }"
     [breakpoints]="{ '768px': '95vw' }"
@@ -99,7 +100,7 @@
                 <label class="font-medium">Subscription Model</label>
                 <p-select
                     [(ngModel)]="form.orgSubscriptionModel"
-                    [options]="subscriptionModels"
+                    [options]="subscriptionModels()"
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Select model"
@@ -116,8 +117,8 @@
             <div class="flex flex-col items-center gap-3">
                 <label class="font-medium self-start">Logo</label>
                 <div class="org-logo-container">
-                    @if (logoPreview) {
-                        <img [src]="logoPreview" alt="Company logo" class="org-logo-preview" />
+                    @if (logoPreview()) {
+                        <img [src]="logoPreview()" alt="Company logo" class="org-logo-preview" />
                     } @else {
                         <div class="org-logo-placeholder">
                             <i class="pi pi-image text-4xl text-muted-color"></i>
@@ -134,9 +135,9 @@
     </div>
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
         <p-button
-            [label]="editMode ? 'Update' : 'Add'"
+            [label]="editMode() ? 'Update' : 'Add'"
             icon="pi pi-check"
             (onClick)="save()"
             [disabled]="!form.organizationName?.trim()"
@@ -146,8 +147,9 @@
 
 <!-- Exam URLs Dialog -->
 <p-dialog
-    [(visible)]="examUrlDialogVisible"
-    [header]="(selectedOrg?.organizationName ?? '') + ' — Exam URLs'"
+    [visible]="examUrlDialogVisible()"
+    (visibleChange)="examUrlDialogVisible.set($event)"
+    [header]="(selectedOrg()?.organizationName ?? '') + ' — Exam URLs'"
     [modal]="true"
     [style]="{ width: '520px' }"
     [breakpoints]="{ '768px': '95vw' }"
@@ -158,12 +160,12 @@
         <p-button label="Download PDF" icon="pi pi-download" size="small" [outlined]="true" (onClick)="downloadPdf()" />
     </div>
 
-    @if (examUrlLoading) {
+    @if (examUrlLoading()) {
         <div class="flex justify-center py-8">
             <p-progressspinner />
         </div>
     } @else {
-        <p-table [value]="examList" dataKey="examName" [paginator]="examList.length > 10" [rows]="10">
+        <p-table [value]="examList()" dataKey="examName" [paginator]="examList().length > 10" [rows]="10">
             <ng-template #header>
                 <tr><th>Exam</th></tr>
             </ng-template>
@@ -185,7 +187,8 @@
 
 <!-- Send Email Dialog -->
 <p-dialog
-    [(visible)]="sendEmailDialogVisible"
+    [visible]="sendEmailDialogVisible()"
+    (visibleChange)="sendEmailDialogVisible.set($event)"
     header="Send email"
     [modal]="true"
     [style]="{ width: '380px' }"
@@ -196,7 +199,7 @@
         <input pInputText [(ngModel)]="emailAddress" type="email" placeholder="recipient@example.com" />
     </div>
     <ng-template #footer>
-        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="sendEmailDialogVisible = false" />
-        <p-button label="Send" icon="pi pi-send" [loading]="sendingEmail" [disabled]="!emailAddress" (onClick)="sendEmail()" />
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="sendEmailDialogVisible.set(false)" />
+        <p-button label="Send" icon="pi pi-send" [loading]="sendingEmail()" [disabled]="!emailAddress" (onClick)="sendEmail()" />
     </ng-template>
 </p-dialog>

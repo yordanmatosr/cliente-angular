@@ -50,7 +50,7 @@ export class ContactComponent implements OnInit {
     get showTestDefs() { return this.isAdmin; }
 
     ngOnInit() {
-        const user = this.authService.currentUser!;
+        const user = this.authService.currentUser()!;
         this.role = user.roles[0];
         this.activeTab = this.isAdmin ? 'faq' : 'guides';
 

@@ -25,7 +25,7 @@ export class AppMenu implements OnInit {
     model: MenuItem[] = [];
 
     ngOnInit() {
-        const user = this.auth.currentUser;
+        const user = this.auth.currentUser();
         const roles = user?.roles ?? [];
 
         const hasRole = (...r: string[]) => r.some(role => roles.includes(role));

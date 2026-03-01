@@ -11,8 +11,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="exams"
-    [loading]="loading"
+    [value]="exams()"
+    [loading]="loading()"
     dataKey="clinicianAssessmentId"
     [globalFilterFields]="['examName', 'examType', 'status']"
     [paginator]="true"
@@ -125,7 +125,8 @@
 
 <!-- Terms & Conditions Dialog -->
 <p-dialog
-    [(visible)]="termsVisible"
+    [visible]="termsVisible()"
+    (visibleChange)="termsVisible.set($event)"
     header="Terms & Conditions — User Rights"
     [modal]="true"
     [style]="{ width: '580px' }"
@@ -150,15 +151,15 @@
         </div>
     </div>
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="termsVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="termsVisible.set(false)" />
         <p-button label="Accept" icon="pi pi-check" [disabled]="!termsAccepted" (onClick)="acceptTerms()" />
     </ng-template>
 </p-dialog>
 
 <!-- Exam Dialog -->
-@if (currentExam && examDialogVisible) {
+@if (currentExam() && examDialogVisible()) {
     <app-exam-dialog
-        [exam]="currentExam"
+        [exam]="currentExam()"
         [userId]="userId"
         (closed)="onExamDialogClose($event)"
     />

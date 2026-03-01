@@ -15,8 +15,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="specialties"
-    [loading]="loading"
+    [value]="specialties()"
+    [loading]="loading()"
     dataKey="specialtyId"
     [globalFilterFields]="['specialtyDescription']"
     [paginator]="true"
@@ -67,14 +67,15 @@
 
 <!-- Create / Edit Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
-    [header]="editMode ? 'Edit Specialty' : 'New Specialty'"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="editMode() ? 'Edit Specialty' : 'New Specialty'"
     [modal]="true"
     [style]="{ width: '440px' }"
     [breakpoints]="{ '768px': '95vw' }"
     [draggable]="false"
 >
-    @if (optionsLoading) {
+    @if (optionsLoading()) {
         <div class="flex justify-center py-6">
             <p-progressspinner />
         </div>
@@ -89,7 +90,7 @@
                 <label class="font-medium">Type <span class="text-red-400">*</span></label>
                 <p-select
                     [(ngModel)]="form.clinicianTypeId"
-                    [options]="clinicianTypes"
+                    [options]="clinicianTypes()"
                     optionLabel="typeName"
                     optionValue="typeId"
                     placeholder="Select type"
@@ -101,7 +102,7 @@
                 <label class="font-medium">Prof Designation Type <span class="text-red-400">*</span></label>
                 <p-select
                     [(ngModel)]="form.profDesignationTypeId"
-                    [options]="profDesTypes"
+                    [options]="profDesTypes()"
                     optionLabel="profDesignationTypeDetail"
                     optionValue="profDesignationTypeId"
                     placeholder="Select prof designation"
@@ -112,12 +113,12 @@
     }
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
         <p-button
-            [label]="editMode ? 'Update' : 'Add'"
+            [label]="editMode() ? 'Update' : 'Add'"
             icon="pi pi-check"
             (onClick)="save()"
-            [disabled]="optionsLoading || !form.specialtyDescription?.trim() || !form.clinicianTypeId || !form.profDesignationTypeId"
+            [disabled]="optionsLoading() || !form.specialtyDescription?.trim() || !form.clinicianTypeId || !form.profDesignationTypeId"
         />
     </ng-template>
 </p-dialog>

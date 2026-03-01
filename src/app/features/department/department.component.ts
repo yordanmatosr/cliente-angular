@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +20,7 @@ import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
 import { DepartmentService } from '../../core/services/department.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ROLE } from '../../core/constants/roles.constants';
 
 @Component({
     selector: 'app-department',
@@ -43,53 +45,51 @@ export class DepartmentComponent implements OnInit {
     private authService = inject(AuthService);
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    departments: any[] = [];
-    loading = true;
+    departments = signal<any[]>([]);
+    loading = signal(true);
+    organizations = signal<any[]>([]);
+    isSuper = signal(false);
 
-    dialogVisible = false;
-    editMode = false;
+    dialogVisible = signal(false);
+    editMode = signal(false);
     form: any = this.emptyForm();
-    organizations: any[] = [];
-    isSuper = false;
 
     menuItems: MenuItem[] = [];
 
     ngOnInit() {
-        this.isSuper = this.authService.hasRole('super');
+        this.isSuper.set(this.authService.hasRole(ROLE.SUPER));
         this.loadDepartments();
         this.loadOrganizations();
     }
 
     loadDepartments() {
-        this.loading = true;
-        const userId = this.authService.currentUser!.id;
-        this.deptService.allByUser(userId).subscribe({
-            next: (data: any[]) => {
-                this.departments = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        const userId = this.authService.currentUser()!.id;
+        this.deptService.allByUser(userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.departments.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     loadOrganizations() {
-        const userId = this.authService.currentUser!.id;
-        this.orgService.allByUser(userId).subscribe({
-            next: (data: any[]) => this.organizations = data
-        });
+        const userId = this.authService.currentUser()!.id;
+        this.orgService.allByUser(userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => this.organizations.set(data)
+            });
     }
 
     openCreate() {
-        const defaultOrgId = !this.isSuper && this.organizations.length
-            ? this.organizations[0].organizationId
-            : null;
+        const orgs = this.organizations();
+        const defaultOrgId = !this.isSuper() && orgs.length ? orgs[0].organizationId : null;
         this.form = { ...this.emptyForm(), organizationId: defaultOrgId };
-        this.editMode = false;
-        this.dialogVisible = true;
+        this.editMode.set(false);
+        this.dialogVisible.set(true);
     }
 
     openEdit(dept: any) {
@@ -99,23 +99,23 @@ export class DepartmentComponent implements OnInit {
             description: dept.description,
             organizationId: dept.organization?.organizationId ?? dept.organizationId
         };
-        this.editMode = true;
-        this.dialogVisible = true;
+        this.editMode.set(true);
+        this.dialogVisible.set(true);
     }
 
     save() {
-        const request = this.editMode
+        const request = this.editMode()
             ? this.deptService.update(this.form)
             : this.deptService.create(this.form);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editMode ? 'Updated' : 'Created',
-                    detail: `${data.departmentName} ${this.editMode ? 'updated' : 'saved'}`
+                    summary: this.editMode() ? 'Updated' : 'Created',
+                    detail: `${data.departmentName} ${this.editMode() ? 'updated' : 'saved'}`
                 });
-                this.dialogVisible = false;
+                this.dialogVisible.set(false);
                 this.loadDepartments();
             },
             error: (err: any) => this.showError(err)
@@ -130,13 +130,15 @@ export class DepartmentComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.deptService.delete(dept.departmentId).subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Department deleted' });
-                        this.loadDepartments();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.deptService.delete(dept.departmentId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Department deleted' });
+                            this.loadDepartments();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }

@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
@@ -25,6 +26,7 @@ import { OrganizationService } from '../../core/services/organization.service';
 import { DepartmentService } from '../../core/services/department.service';
 import { SpecialtyService } from '../../core/services/specialty.service';
 import { AuthService } from '../../core/services/auth.service';
+import { USER_STATUS_INFO, DEFAULT_PASSWORD } from '../../core/constants/status.constants';
 
 @Component({
     selector: 'app-clinician',
@@ -52,51 +54,44 @@ export class ClinicianComponent implements OnInit {
     private authService = inject(AuthService);
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    clinicians: any[] = [];
-    loading = true;
+    clinicians = signal<any[]>([]);
+    loading = signal(true);
 
-    dialogVisible = false;
-    editMode = false;
+    dialogVisible = signal(false);
+    editMode = signal(false);
     form: any = this.emptyForm();
-    optionsLoading = false;
+    optionsLoading = signal(false);
 
-    allOrganizations: any[] = [];
-    allDepartments: any[] = [];
-    filteredDepartments: any[] = [];
-    clinicianTypes: any[] = [];
-    specialties: any[] = [];
+    allOrganizations = signal<any[]>([]);
+    allDepartments = signal<any[]>([]);
+    filteredDepartments = signal<any[]>([]);
+    clinicianTypes = signal<any[]>([]);
+    specialties = signal<any[]>([]);
 
     menuItems: MenuItem[] = [];
 
-    readonly STATUS_LABELS: Record<number, { label: string; severity: 'info' | 'success' | 'danger' | 'secondary' }> = {
-        0: { label: 'New', severity: 'info' },
-        1: { label: 'Active', severity: 'success' },
-        2: { label: 'Pending', severity: 'danger' }
-    };
+    readonly STATUS_INFO = USER_STATUS_INFO;
 
     ngOnInit() {
         this.loadClinicians();
     }
 
     loadClinicians() {
-        this.loading = true;
-        this.clinicianService.all().subscribe({
-            next: (data: any[]) => {
-                this.clinicians = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.clinicianService.all()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.clinicians.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     openCreate() {
         this.form = this.emptyForm();
-        this.editMode = false;
-        this.dialogVisible = true;
+        this.editMode.set(false);
+        this.dialogVisible.set(true);
         this.loadFormOptions(null);
     }
 
@@ -122,69 +117,66 @@ export class ClinicianComponent implements OnInit {
             isClinician: true,
             role: ['user']
         };
-        this.editMode = true;
-        this.dialogVisible = true;
+        this.editMode.set(true);
+        this.dialogVisible.set(true);
         this.loadFormOptions(orgId);
     }
 
     private loadFormOptions(selectedOrgId: number | null) {
-        this.optionsLoading = true;
-        const userId = this.authService.currentUser!.id;
+        this.optionsLoading.set(true);
+        const userId = this.authService.currentUser()!.id;
         forkJoin([
             this.orgService.allByUser(userId),
             this.deptService.allByUser(userId),
             this.clinicianTypeService.all(),
             this.specialtyService.all()
-        ]).subscribe({
+        ])
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: ([orgs, depts, types, specs]: [any[], any[], any[], any[]]) => {
-                this.allOrganizations = orgs;
-                this.allDepartments = depts;
-                this.clinicianTypes = types;
-                this.specialties = specs;
+                this.allOrganizations.set(orgs);
+                this.allDepartments.set(depts);
+                this.clinicianTypes.set(types);
+                this.specialties.set(specs);
 
                 const orgId = selectedOrgId ?? (orgs[0]?.organizationId ?? null);
                 if (!this.form.organizationId && orgId) this.form.organizationId = orgId;
-                this.filteredDepartments = this.filterDepts(this.form.organizationId);
-                if (!this.form.department && this.filteredDepartments.length) {
-                    this.form.department = this.filteredDepartments[0].departmentId;
+                this.filteredDepartments.set(this.filterDepts(this.form.organizationId));
+                if (!this.form.department && this.filteredDepartments().length) {
+                    this.form.department = this.filteredDepartments()[0].departmentId;
                 }
                 if (!this.form.typeId && types.length) this.form.typeId = types[0].typeId;
-                this.optionsLoading = false;
+                this.optionsLoading.set(false);
             },
-            error: (err: any) => {
-                this.showError(err);
-                this.optionsLoading = false;
-            }
+            error: (err: any) => { this.showError(err); this.optionsLoading.set(false); }
         });
     }
 
     onOrgChange() {
-        this.filteredDepartments = this.filterDepts(this.form.organizationId);
-        this.form.department = this.filteredDepartments[0]?.departmentId ?? null;
+        this.filteredDepartments.set(this.filterDepts(this.form.organizationId));
+        this.form.department = this.filteredDepartments()[0]?.departmentId ?? null;
     }
 
     private filterDepts(orgId: number | null): any[] {
-        if (!orgId) return this.allDepartments;
-        return this.allDepartments.filter(
-            d => d.organization?.organizationId === orgId
-        );
+        if (!orgId) return this.allDepartments();
+        return this.allDepartments().filter(d => d.organization?.organizationId === orgId);
     }
 
     save() {
         const payload = this.buildPayload();
-        const request = this.editMode
+        const request = this.editMode()
             ? this.clinicianService.update(payload)
             : this.clinicianService.create(payload);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 const name = data.userResponse?.username ?? data.username ?? '';
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editMode ? 'Updated' : 'Created',
-                    detail: `${name} ${this.editMode ? 'updated' : 'saved'}`
+                    summary: this.editMode() ? 'Updated' : 'Created',
+                    detail: `${name} ${this.editMode() ? 'updated' : 'saved'}`
                 });
-                this.dialogVisible = false;
+                this.dialogVisible.set(false);
                 this.loadClinicians();
             },
             error: (err: any) => this.showError(err)
@@ -196,7 +188,7 @@ export class ClinicianComponent implements OnInit {
             userRequest: {
                 username: this.form.username,
                 email: this.form.email,
-                password: this.form.password || '12345678',
+                password: this.form.password || DEFAULT_PASSWORD,
                 firstname: this.form.firstname,
                 middlename: this.form.middlename,
                 lastname: this.form.lastname,
@@ -212,7 +204,7 @@ export class ClinicianComponent implements OnInit {
             typeId: this.form.typeId,
             specialtiesRequest: this.form.specialtiesRequest ?? []
         };
-        if (this.editMode) {
+        if (this.editMode()) {
             base.clinicianId = this.form.clinicianId;
             base.userRequest.userId = this.form.userId;
         }
@@ -228,13 +220,15 @@ export class ClinicianComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.clinicianService.delete(c.clinicianId).subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Clinician deleted' });
-                        this.loadClinicians();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.clinicianService.delete(c.clinicianId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Clinician deleted' });
+                            this.loadClinicians();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }
@@ -248,8 +242,8 @@ export class ClinicianComponent implements OnInit {
         return c.specialtyResponses?.map((s: any) => s.specialtyDescription).join(', ') ?? '';
     }
 
-    statusInfo(status: number): { label: string; severity: 'info' | 'success' | 'danger' | 'secondary' } {
-        return this.STATUS_LABELS[status] ?? { label: 'Unknown', severity: 'secondary' };
+    statusInfo(status: number) {
+        return this.STATUS_INFO[status] ?? { label: 'Unknown', severity: 'secondary' };
     }
 
     onGlobalFilter(event: Event) {
@@ -272,7 +266,7 @@ export class ClinicianComponent implements OnInit {
         return {
             clinicianId: 0, userId: 0,
             firstname: '', middlename: '', lastname: '',
-            email: '', username: '', password: '12345678',
+            email: '', username: '', password: DEFAULT_PASSWORD,
             organizationId: null, department: null,
             phoneNumber: '',
             typeId: null, specialtiesRequest: [],

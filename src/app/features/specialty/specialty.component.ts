@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
@@ -42,17 +43,18 @@ export class SpecialtyComponent implements OnInit {
     private profDesService = inject(ProfDesignationTypeService);
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    specialties: any[] = [];
-    loading = true;
+    specialties = signal<any[]>([]);
+    loading = signal(true);
 
-    dialogVisible = false;
-    editMode = false;
+    dialogVisible = signal(false);
+    editMode = signal(false);
     form: any = this.emptyForm();
-    optionsLoading = false;
+    optionsLoading = signal(false);
 
-    clinicianTypes: any[] = [];
-    profDesTypes: any[] = [];
+    clinicianTypes = signal<any[]>([]);
+    profDesTypes = signal<any[]>([]);
 
     menuItems: MenuItem[] = [];
 
@@ -61,23 +63,19 @@ export class SpecialtyComponent implements OnInit {
     }
 
     loadSpecialties() {
-        this.loading = true;
-        this.specialtyService.all().subscribe({
-            next: (data: any[]) => {
-                this.specialties = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.specialtyService.all()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.specialties.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     openCreate() {
         this.form = this.emptyForm();
-        this.editMode = false;
-        this.dialogVisible = true;
+        this.editMode.set(false);
+        this.dialogVisible.set(true);
         this.loadFormOptions();
     }
 
@@ -88,49 +86,48 @@ export class SpecialtyComponent implements OnInit {
             clinicianTypeId: specialty.clinicianTypeId ?? specialty.clinicianType?.typeId,
             profDesignationTypeId: specialty.profDesignationTypeId ?? specialty.profDesignationType?.profDesignationTypeId
         };
-        this.editMode = true;
-        this.dialogVisible = true;
+        this.editMode.set(true);
+        this.dialogVisible.set(true);
         this.loadFormOptions();
     }
 
     private loadFormOptions() {
-        if (this.clinicianTypes.length && this.profDesTypes.length) return;
-        this.optionsLoading = true;
+        if (this.clinicianTypes().length && this.profDesTypes().length) return;
+        this.optionsLoading.set(true);
         forkJoin([
             this.clinicianTypeService.all(),
             this.profDesService.all()
-        ]).subscribe({
+        ])
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: ([types, profs]: [any[], any[]]) => {
-                this.clinicianTypes = types;
-                this.profDesTypes = profs;
+                this.clinicianTypes.set(types);
+                this.profDesTypes.set(profs);
                 if (!this.form.clinicianTypeId && types.length) {
                     this.form.clinicianTypeId = types[0].typeId;
                 }
                 if (!this.form.profDesignationTypeId && profs.length) {
                     this.form.profDesignationTypeId = profs[0].profDesignationTypeId;
                 }
-                this.optionsLoading = false;
+                this.optionsLoading.set(false);
             },
-            error: (err: any) => {
-                this.showError(err);
-                this.optionsLoading = false;
-            }
+            error: (err: any) => { this.showError(err); this.optionsLoading.set(false); }
         });
     }
 
     save() {
-        const request = this.editMode
+        const request = this.editMode()
             ? this.specialtyService.update(this.form)
             : this.specialtyService.create(this.form);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editMode ? 'Updated' : 'Created',
-                    detail: `${data.specialtyDescription} ${this.editMode ? 'updated' : 'saved'}`
+                    summary: this.editMode() ? 'Updated' : 'Created',
+                    detail: `${data.specialtyDescription} ${this.editMode() ? 'updated' : 'saved'}`
                 });
-                this.dialogVisible = false;
+                this.dialogVisible.set(false);
                 this.loadSpecialties();
             },
             error: (err: any) => this.showError(err)
@@ -145,13 +142,15 @@ export class SpecialtyComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.specialtyService.delete(specialty.specialtyId).subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Specialty deleted' });
-                        this.loadSpecialties();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.specialtyService.delete(specialty.specialtyId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Specialty deleted' });
+                            this.loadSpecialties();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }

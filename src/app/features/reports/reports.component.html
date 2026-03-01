@@ -1,18 +1,16 @@
 <p-toast />
 
 <!-- Organizations table (super only) -->
-@if (isSuper) {
+@if (isSuper()) {
     <p-table
         #dtOrgs
-        [value]="organizations"
-        [loading]="orgsLoading"
+        [value]="organizations()"
+        [loading]="orgsLoading()"
         dataKey="organizationId"
         [globalFilterFields]="['organizationName', 'description']"
         [paginator]="true"
         [rows]="5"
         styleClass="p-datatable-gridlines mb-4"
-        selectionMode="single"
-        [(selection)]="selectedOrgId"
     >
         <ng-template #caption>
             <div class="flex justify-between items-center">
@@ -31,8 +29,8 @@
         </ng-template>
         <ng-template #body let-org>
             <tr
-                [class.bg-primary-50]="org.organizationId === selectedOrgId"
-                [class.font-semibold]="org.organizationId === selectedOrgId"
+                [class.bg-primary-50]="org.organizationId === selectedOrgId()"
+                [class.font-semibold]="org.organizationId === selectedOrgId()"
                 class="cursor-pointer hover:bg-surface-100"
                 (click)="selectOrg(org)"
             >
@@ -51,12 +49,12 @@
     @for (p of PERIODS; track p.value) {
         <div
             class="period-card flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all"
-            [class.period-selected]="periodType === p.value"
+            [class.period-selected]="periodType() === p.value"
             (click)="selectPeriod(p.value)"
         >
             <i [class]="p.icon + ' text-3xl'"></i>
             <span class="font-semibold text-sm">{{ p.label }}</span>
-            @if (periodType === p.value) {
+            @if (periodType() === p.value) {
                 <i class="pi pi-check text-xs text-green-600"></i>
             }
         </div>
@@ -64,11 +62,11 @@
 </div>
 
 <!-- Results table -->
-@if (selectedOrgId) {
+@if (selectedOrgId()) {
     <p-table
         #dtReport
-        [value]="reportData"
-        [loading]="reportLoading"
+        [value]="reportData()"
+        [loading]="reportLoading()"
         dataKey="clinicianReportDataId"
         [globalFilterFields]="['userClinician.firstname', 'userClinician.lastname', 'userClinician.department.departmentName', 'exam.examName']"
         [paginator]="true"
@@ -79,13 +77,13 @@
     >
         <ng-template #caption>
             <div class="flex justify-between items-center flex-wrap gap-2">
-                <span class="text-lg font-semibold">{{ selectedOrgName }} — {{ periodLabel(periodType) }}</span>
+                <span class="text-lg font-semibold">{{ selectedOrgName() }} — {{ periodLabel(periodType()) }}</span>
                 <div class="flex items-center gap-2">
                     <p-iconfield>
                         <p-inputicon styleClass="pi pi-search" />
                         <input pInputText type="text" (input)="onGlobalFilterReport($event)" placeholder="Search..." />
                     </p-iconfield>
-                    @if (reportData.length > 0) {
+                    @if (reportData().length > 0) {
                         <p-button
                             icon="pi pi-download"
                             label="PDF"

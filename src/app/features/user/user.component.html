@@ -14,8 +14,8 @@
 <!-- Table -->
 <p-table
     #dt
-    [value]="users"
-    [loading]="loading"
+    [value]="users()"
+    [loading]="loading()"
     dataKey="userId"
     [globalFilterFields]="['username', 'email', 'firstname', 'lastname', 'department.departmentName']"
     [paginator]="true"
@@ -40,7 +40,7 @@
             <th pSortableColumn="firstname">Full Name <p-sortIcon field="firstname" /></th>
             <th pSortableColumn="roles">Role <p-sortIcon field="roles" /></th>
             <th pSortableColumn="department.departmentName">Department <p-sortIcon field="department.departmentName" /></th>
-            @if (isSuper) {
+            @if (isSuper()) {
                 <th pSortableColumn="department.organization.organizationName">Company <p-sortIcon field="department.organization.organizationName" /></th>
             }
             <th style="width: 4rem"></th>
@@ -61,7 +61,7 @@
                 />
             </td>
             <td>{{ user.department?.departmentName }}</td>
-            @if (isSuper) {
+            @if (isSuper()) {
                 <td>{{ user.department?.organization?.organizationName }}</td>
             }
             <td>
@@ -77,21 +77,22 @@
 
     <ng-template #emptymessage>
         <tr>
-            <td [attr.colspan]="isSuper ? 7 : 6" class="text-center py-8 text-muted-color">No users found.</td>
+            <td [attr.colspan]="isSuper() ? 7 : 6" class="text-center py-8 text-muted-color">No users found.</td>
         </tr>
     </ng-template>
 </p-table>
 
 <!-- Create / Edit Dialog -->
 <p-dialog
-    [(visible)]="dialogVisible"
-    [header]="editMode ? 'Edit User' : 'New User'"
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="editMode() ? 'Edit User' : 'New User'"
     [modal]="true"
     [style]="{ width: '680px' }"
     [breakpoints]="{ '768px': '95vw' }"
     [draggable]="false"
 >
-    @if (optionsLoading) {
+    @if (optionsLoading()) {
         <div class="flex justify-center py-8">
             <p-progressspinner />
         </div>
@@ -136,7 +137,7 @@
                     <label class="font-medium">Role <span class="text-red-400">*</span></label>
                     <p-select
                         [(ngModel)]="form.role"
-                        [options]="availableRoles"
+                        [options]="availableRoles()"
                         optionLabel="label"
                         optionValue="value"
                         placeholder="Select role"
@@ -152,7 +153,7 @@
                         <label class="font-medium">Company <span class="text-red-400">*</span></label>
                         <p-select
                             [(ngModel)]="form.organizationId"
-                            [options]="allOrganizations"
+                            [options]="allOrganizations()"
                             optionLabel="organizationName"
                             optionValue="organizationId"
                             placeholder="Select company"
@@ -164,7 +165,7 @@
                         <label class="font-medium">Department <span class="text-red-400">*</span></label>
                         <p-select
                             [(ngModel)]="form.department"
-                            [options]="filteredDepartments"
+                            [options]="filteredDepartments()"
                             optionLabel="departmentName"
                             optionValue="departmentId"
                             placeholder="Select department"
@@ -185,19 +186,20 @@
     }
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible.set(false)" />
         <p-button
-            [label]="editMode ? 'Update' : 'Add'"
+            [label]="editMode() ? 'Update' : 'Add'"
             icon="pi pi-check"
             (onClick)="save()"
-            [disabled]="optionsLoading || !form.firstname?.trim() || !form.email?.trim() || !form.username?.trim()"
+            [disabled]="optionsLoading() || !form.firstname?.trim() || !form.email?.trim() || !form.username?.trim()"
         />
     </ng-template>
 </p-dialog>
 
 <!-- Reset Password Dialog -->
 <p-dialog
-    [(visible)]="resetPasswordVisible"
+    [visible]="resetPasswordVisible()"
+    (visibleChange)="resetPasswordVisible.set($event)"
     [header]="'Reset password — ' + (resetTarget?.username ?? '')"
     [modal]="true"
     [style]="{ width: '360px' }"
@@ -233,11 +235,11 @@
     </div>
 
     <ng-template #footer>
-        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="resetPasswordVisible = false" />
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="resetPasswordVisible.set(false)" />
         <p-button
             label="Reset Password"
             icon="pi pi-key"
-            [loading]="resetting"
+            [loading]="resetting()"
             [disabled]="!resetPasswordValid"
             (onClick)="doResetPassword()"
         />

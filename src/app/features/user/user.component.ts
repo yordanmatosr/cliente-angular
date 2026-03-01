@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
@@ -22,6 +23,8 @@ import { RoleService } from '../../core/services/role.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { DepartmentService } from '../../core/services/department.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ROLE } from '../../core/constants/roles.constants';
+import { DEFAULT_PASSWORD } from '../../core/constants/status.constants';
 
 @Component({
     selector: 'app-user',
@@ -47,60 +50,58 @@ export class UserComponent implements OnInit {
     private deptService = inject(DepartmentService);
     private authService = inject(AuthService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    users: any[] = [];
-    loading = true;
-    isSuper = false;
+    users = signal<any[]>([]);
+    loading = signal(true);
+    isSuper = signal(false);
 
-    // Edit dialog
-    dialogVisible = false;
-    editMode = false;
+    dialogVisible = signal(false);
+    editMode = signal(false);
     form: any = this.emptyForm();
-    optionsLoading = false;
-    availableRoles: { label: string; value: string }[] = [];
-    allOrganizations: any[] = [];
-    allDepartments: any[] = [];
-    filteredDepartments: any[] = [];
+    optionsLoading = signal(false);
+    availableRoles = signal<{ label: string; value: string }[]>([]);
+    allOrganizations = signal<any[]>([]);
+    allDepartments = signal<any[]>([]);
+    filteredDepartments = signal<any[]>([]);
 
-    // Reset password dialog
-    resetPasswordVisible = false;
+    resetPasswordVisible = signal(false);
     resetTarget: any = null;
     newPassword = '';
     confirmPassword = '';
-    resetting = false;
+    resetting = signal(false);
 
     menuItems: MenuItem[] = [];
 
     readonly ROLE_SEVERITY: Record<string, 'danger' | 'warn' | 'success' | 'info' | 'secondary'> = {
-        super: 'danger',
-        superadmin: 'warn',
-        admin: 'success',
-        user: 'info'
+        [ROLE.SUPER]: 'danger',
+        [ROLE.SUPERADMIN]: 'warn',
+        [ROLE.ADMIN]: 'success',
+        [ROLE.USER]: 'info'
     };
 
     ngOnInit() {
-        this.isSuper = this.authService.hasRole('super');
+        this.isSuper.set(this.authService.hasRole(ROLE.SUPER));
         this.loadUsers();
     }
 
     loadUsers() {
-        this.loading = true;
-        this.userService.all().subscribe({
-            next: (data: any[]) => {
-                this.users = data.filter((u: any) => u.roles?.[0] !== 'user');
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.userService.all()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => {
+                    this.users.set(data.filter((u: any) => !u.roles?.includes(ROLE.USER)));
+                    this.loading.set(false);
+                },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     openCreate() {
         this.form = this.emptyForm();
-        this.editMode = false;
-        this.dialogVisible = true;
+        this.editMode.set(false);
+        this.dialogVisible.set(true);
         this.loadFormOptions(null);
     }
 
@@ -117,79 +118,80 @@ export class UserComponent implements OnInit {
             address: user.address ?? '',
             organizationId: orgId,
             department: deptId,
-            role: user.roles?.[0] ?? 'admin',
+            role: user.roles?.[0] ?? ROLE.ADMIN,
             isTwoFactorEnabled: !!user.isTwoFactorEnabled,
             status: user.status ?? 0,
             isClinician: user.isClinician ?? false
         };
-        this.editMode = true;
-        this.dialogVisible = true;
+        this.editMode.set(true);
+        this.dialogVisible.set(true);
         this.loadFormOptions(orgId);
     }
 
     private loadFormOptions(selectedOrgId: number | null) {
-        this.optionsLoading = true;
-        const userId = this.authService.currentUser!.id;
+        this.optionsLoading.set(true);
+        const userId = this.authService.currentUser()!.id;
         forkJoin([
             this.roleService.all(),
             this.orgService.allByUser(userId),
             this.deptService.allByUser(userId)
-        ]).subscribe({
+        ])
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
             next: ([rolesData, orgs, depts]: [any, any[], any[]]) => {
                 const rolesList: string[] = rolesData?.roles ?? (Array.isArray(rolesData) ? rolesData : []);
-                this.availableRoles = rolesList
-                    .filter((r: string) => r !== 'user' && r !== 'kiosk')
-                    .map((r: string) => ({ label: r.toUpperCase(), value: r }));
+                this.availableRoles.set(
+                    rolesList
+                        .filter((r: string) => r !== ROLE.USER && r !== ROLE.KIOSK)
+                        .map((r: string) => ({ label: r.toUpperCase(), value: r }))
+                );
 
-                this.allOrganizations = orgs;
-                this.allDepartments = depts;
+                this.allOrganizations.set(orgs);
+                this.allDepartments.set(depts);
 
                 const orgId = selectedOrgId ?? (orgs[0]?.organizationId ?? null);
                 if (!this.form.organizationId && orgId) this.form.organizationId = orgId;
-                this.filteredDepartments = this.filterDepts(this.form.organizationId);
-                if (!this.form.department && this.filteredDepartments.length) {
-                    this.form.department = this.filteredDepartments[0].departmentId;
+                this.filteredDepartments.set(this.filterDepts(this.form.organizationId));
+                if (!this.form.department && this.filteredDepartments().length) {
+                    this.form.department = this.filteredDepartments()[0].departmentId;
                 }
-                if (!this.form.role && this.availableRoles.length) {
-                    this.form.role = this.availableRoles[0].value;
+                if (!this.form.role && this.availableRoles().length) {
+                    this.form.role = this.availableRoles()[0].value;
                 }
-                this.optionsLoading = false;
+                this.optionsLoading.set(false);
             },
-            error: (err: any) => {
-                this.showError(err);
-                this.optionsLoading = false;
-            }
+            error: (err: any) => { this.showError(err); this.optionsLoading.set(false); }
         });
     }
 
     onOrgChange() {
-        this.filteredDepartments = this.filterDepts(this.form.organizationId);
-        this.form.department = this.filteredDepartments[0]?.departmentId ?? null;
+        this.filteredDepartments.set(this.filterDepts(this.form.organizationId));
+        this.form.department = this.filteredDepartments()[0]?.departmentId ?? null;
     }
 
     private filterDepts(orgId: number | null): any[] {
-        if (!orgId) return this.allDepartments;
-        return this.allDepartments.filter(d => d.organization?.organizationId === orgId);
+        if (!orgId) return this.allDepartments();
+        return this.allDepartments().filter(d => d.organization?.organizationId === orgId);
     }
 
     get isFormRoleSuper(): boolean {
-        return this.form.role === 'super';
+        return this.form.role === ROLE.SUPER;
     }
 
     save() {
         const payload = this.buildPayload();
-        const request = this.editMode
+        const request = this.editMode()
             ? this.userService.update(payload)
             : this.userService.create(payload);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.editMode ? 'Updated' : 'Created',
-                    detail: `${data.username} ${this.editMode ? 'updated' : 'saved'}`
+                    summary: this.editMode() ? 'Updated' : 'Created',
+                    detail: `${data.username} ${this.editMode() ? 'updated' : 'saved'}`
                 });
-                this.dialogVisible = false;
+                this.dialogVisible.set(false);
                 this.loadUsers();
             },
             error: (err: any) => this.showError(err)
@@ -215,26 +217,28 @@ export class UserComponent implements OnInit {
             userModel: '',
             isTwoFactorEnabled: this.form.isTwoFactorEnabled ? 1 : 0
         };
-        if (this.editMode) base.userId = this.form.userId;
-        if (!this.editMode) base.password = '12345678';
+        if (this.editMode()) base.userId = this.form.userId;
+        if (!this.editMode()) base.password = DEFAULT_PASSWORD;
         return base;
     }
 
     toggleDisable(user: any) {
-        this.userService.updateIsDisabled(user.userId).subscribe({
-            next: (data: any) => {
-                this.messageService.add({ severity: 'success', summary: 'Updated', detail: data.message });
-                this.loadUsers();
-            },
-            error: (err: any) => this.showError(err)
-        });
+        this.userService.updateIsDisabled(user.userId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => {
+                    this.messageService.add({ severity: 'success', summary: 'Updated', detail: data.message });
+                    this.loadUsers();
+                },
+                error: (err: any) => this.showError(err)
+            });
     }
 
     openResetPassword(user: any) {
         this.resetTarget = user;
         this.newPassword = '';
         this.confirmPassword = '';
-        this.resetPasswordVisible = true;
+        this.resetPasswordVisible.set(true);
     }
 
     get resetPasswordValid(): boolean {
@@ -245,18 +249,17 @@ export class UserComponent implements OnInit {
 
     doResetPassword() {
         if (!this.resetPasswordValid || !this.resetTarget) return;
-        this.resetting = true;
-        this.userService.password_Reset(this.resetTarget.userId, this.newPassword).subscribe({
-            next: (data: any) => {
-                this.messageService.add({ severity: 'success', summary: 'Password Reset', detail: data.message });
-                this.resetPasswordVisible = false;
-                this.resetting = false;
-            },
-            error: (err: any) => {
-                this.showError(err);
-                this.resetting = false;
-            }
-        });
+        this.resetting.set(true);
+        this.userService.password_Reset(this.resetTarget.userId, this.newPassword)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => {
+                    this.messageService.add({ severity: 'success', summary: 'Password Reset', detail: data.message });
+                    this.resetPasswordVisible.set(false);
+                    this.resetting.set(false);
+                },
+                error: (err: any) => { this.showError(err); this.resetting.set(false); }
+            });
     }
 
     roleSeverity(role: string): 'danger' | 'warn' | 'success' | 'info' | 'secondary' {
@@ -285,7 +288,7 @@ export class UserComponent implements OnInit {
             userId: 0, firstname: '', middlename: '', lastname: '',
             email: '', username: '', address: '',
             organizationId: null, department: null,
-            role: 'admin', isTwoFactorEnabled: false,
+            role: ROLE.ADMIN, isTwoFactorEnabled: false,
             status: 0, isClinician: false
         };
     }
