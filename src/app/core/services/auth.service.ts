@@ -45,10 +45,22 @@ export class AuthService {
         return roles.some(role => this.currentUser?.roles?.includes(role));
     }
 
-    login(username: string, password: string): Observable<CurrentUser> {
-        return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/signin`, { username, password }).pipe(
+    // Returns the raw response — may be a full CurrentUser (accessToken present)
+    // or a 2FA challenge { email, message } (no accessToken).
+    login(username: string, password: string): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/signin`, { username, password }).pipe(
+            tap(data => { if (data?.accessToken) this.saveUser(data as CurrentUser); })
+        );
+    }
+
+    verifyOtp(email: string, otp: number): Observable<CurrentUser> {
+        return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/verify-otp`, { email, otp }).pipe(
             tap(user => this.saveUser(user))
         );
+    }
+
+    resendOtp(email: string): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/resend-otp`, { email });
     }
 
     signinDirect(encryptedUrl: string): Observable<CurrentUser> {

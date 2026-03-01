@@ -33,9 +33,16 @@ export class LoginComponent {
         this.errorMessage = '';
 
         this.auth.login(this.username, this.password).subscribe({
-            next: () => {
-                this.idle.start();
-                this.router.navigate(['/dashboard']);
+            next: (data: any) => {
+                if (data?.accessToken) {
+                    this.idle.start();
+                    this.router.navigate(['/dashboard']);
+                } else {
+                    // 2FA challenge — redirect to OTP page
+                    this.router.navigate(['/auth/loginopt'], {
+                        state: { user: this.username, email: data.email }
+                    });
+                }
             },
             error: () => {
                 this.errorMessage = 'Invalid username or password.';

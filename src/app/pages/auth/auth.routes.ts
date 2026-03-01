@@ -8,6 +8,7 @@ import { ForgotPasswordComponent } from './forgot-password.component';
 import { ForgotUsernameComponent } from './forgot-username.component';
 import { ConfirmMailComponent } from './confirm-mail.component';
 import { PasswordResetComponent } from './password-reset.component';
+import { LoginOtpComponent } from './login-otp.component';
 
 export default [
     { path: 'login', component: LoginComponent },
@@ -19,5 +20,6 @@ export default [
     { path: 'forgot-username', component: ForgotUsernameComponent },
     { path: 'confirm-mail/:email', component: ConfirmMailComponent },
     { path: 'password-reset', component: PasswordResetComponent },
+    { path: 'loginopt', component: LoginOtpComponent },
     { path: '', redirectTo: 'login', pathMatch: 'full' }
 ] as Routes;
