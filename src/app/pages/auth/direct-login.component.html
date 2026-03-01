@@ -1,0 +1,23 @@
+<div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen">
+    <div class="flex flex-col items-center justify-center gap-6 text-center px-4">
+
+        <img src="/img/scoreit_logo.svg" alt="eScoreIT" class="login-logo mb-2" />
+
+        @if (loading) {
+            <p-progressspinner strokeWidth="4" />
+            <span class="text-muted-color text-sm">Signing you in&hellip;</span>
+        }
+
+        @if (errorMessage) {
+            <p-message severity="error" [text]="errorMessage" styleClass="w-full max-w-sm" />
+            <p-button
+                label="Back to Login"
+                icon="pi pi-arrow-left"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="goToLogin()"
+            />
+        }
+
+    </div>
+</div>

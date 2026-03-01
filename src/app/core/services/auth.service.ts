@@ -51,8 +51,14 @@ export class AuthService {
         );
     }
 
-    loginKiosk(encryptedUrl: string): Observable<CurrentUser> {
-        return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/kiosk`, { encryptedUrl }).pipe(
+    signinDirect(encryptedUrl: string): Observable<CurrentUser> {
+        return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/signin_direct`, { encryptedUrl }).pipe(
+            tap(user => this.saveUser(user))
+        );
+    }
+
+    signinKiosk(email: string, encryptedUrl: string): Observable<CurrentUser> {
+        return this.http.post<CurrentUser>(`${environment.apiUrl}/auth/signinKiosk`, { email, encryptedUrl }).pipe(
             tap(user => this.saveUser(user))
         );
     }

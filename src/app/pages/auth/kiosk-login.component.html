@@ -1,0 +1,43 @@
+<div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-y-auto py-4">
+    <div class="flex flex-col items-center justify-center">
+        <div class="login-card-wrapper">
+            <div class="login-card bg-surface-0 dark:bg-surface-900 w-full px-8 sm:px-20">
+
+                <div class="text-center mb-8">
+                    <img src="/img/scoreit_logo.svg" alt="eScoreIT" class="login-logo" />
+                </div>
+
+                <p class="text-surface-900 dark:text-surface-0 text-xl font-semibold text-center mb-6">
+                    Enter your email to begin
+                </p>
+
+                @if (errorMessage) {
+                    <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-4" />
+                }
+
+                <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">
+                    Email address
+                </label>
+                <input
+                    pInputText
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    class="w-full mb-6"
+                    [(ngModel)]="email"
+                    (keyup.enter)="start()"
+                />
+
+                <p-button
+                    label="Start"
+                    icon="pi pi-play"
+                    styleClass="w-full"
+                    [loading]="loading"
+                    [disabled]="!isValid"
+                    (onClick)="start()"
+                />
+
+            </div>
+        </div>
+    </div>
+</div>
