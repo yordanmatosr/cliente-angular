@@ -75,6 +75,28 @@ export class AuthService {
         );
     }
 
+    signup(username: string, email: string, firstname: string, middlename: string,
+           lastname: string, phoneNumber: string, specialtyId: number, orgId: number,
+           encryptedUrl: string): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/signup`, {
+            username, email,
+            firstname: firstname || null, middlename: middlename || null, lastname: lastname || null,
+            phoneNumber, specialtyId, orgId, encryptedUrl, isGenerated: false
+        });
+    }
+
+    assignExam(username: string, encryptedUrl: string): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/assignExam`, { username, encryptedUrl, isGenerated: false });
+    }
+
+    obtenerLogoFromURL(encryptedUrl: string, isDark = false): Observable<Blob> {
+        return this.http.post(`${environment.apiUrl}/auth/obtenerLogoFromURL`, { encryptedUrl, isDark: !!isDark }, { responseType: 'blob' });
+    }
+
+    obtenerOrganizationNameFromURL(encryptedUrl: string): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/obtenerOrganizationNameFromURL`, { encryptedUrl });
+    }
+
     signupGuruTest(data: {
         username: string; email: string; firstname: string; middlename: string;
         lastname: string; phoneNumber: string; address: string;
