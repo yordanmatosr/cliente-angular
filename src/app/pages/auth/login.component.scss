@@ -11,9 +11,16 @@
     border-radius: 53px;
     box-shadow: 0 7px 14px 0 rgba(59, 65, 94, 0.1), 0 3px 6px 0 rgba(0, 0, 0, 0.07);
     min-width: 320px;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
 
     @media (min-width: 640px) {
         min-width: 460px;
+    }
+
+    @media (max-height: 560px) {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
     }
 }
 
@@ -22,6 +29,10 @@
     height: auto;
     margin: 0 auto;
     display: block;
+
+    @media (max-height: 560px) {
+        max-width: 160px;
+    }
 }
 
 .login-link {

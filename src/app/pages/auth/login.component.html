@@ -1,7 +1,7 @@
-<div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
+<div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-y-auto py-4">
     <div class="flex flex-col items-center justify-center">
         <div class="login-card-wrapper">
-            <div class="login-card bg-surface-0 dark:bg-surface-900 w-full py-16 px-8 sm:px-20">
+            <div class="login-card bg-surface-0 dark:bg-surface-900 w-full px-8 sm:px-20">
 
                 <div class="text-center mb-8">
                     <img src="/img/scoreit_logo.svg" alt="eScoreIT" class="login-logo" />
@@ -13,7 +13,7 @@
 
                 <div>
                     <label for="username" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Username</label>
-                    <input pInputText id="username" type="text" placeholder="Username" class="w-full md:w-120 mb-6"
+                    <input pInputText id="username" type="text" placeholder="Username" class="w-full mb-6"
                            [(ngModel)]="username" (keyup.enter)="login()" />
 
                     <label for="password" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
