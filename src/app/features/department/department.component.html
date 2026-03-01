@@ -1,4 +1,117 @@
-<div class="card">
-    <h4>Department</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-confirmDialog />
+<p-menu #actionMenu [model]="menuItems" [popup]="true" />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">Departments</span>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="New Department" icon="pi pi-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="departments"
+    [loading]="loading"
+    dataKey="departmentId"
+    [globalFilterFields]="['departmentName', 'description', 'organization.organizationName']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    sortMode="multiple"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="departmentName">Name <p-sortIcon field="departmentName" /></th>
+            <th pSortableColumn="description">Description <p-sortIcon field="description" /></th>
+            <th pSortableColumn="organization.organizationName">Company <p-sortIcon field="organization.organizationName" /></th>
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-dept>
+        <tr>
+            <td>
+                <a [routerLink]="['/group/group-detail', dept.departmentId]" class="dept-link">
+                    {{ dept.departmentName }}
+                </a>
+            </td>
+            <td>{{ dept.description }}</td>
+            <td>{{ dept.organization?.organizationName }}</td>
+            <td>
+                <p-button
+                    icon="pi pi-ellipsis-h"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="setMenuItems(dept); actionMenu.toggle($event)"
+                />
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td colspan="4" class="text-center py-8 text-muted-color">No departments found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editMode ? 'Edit Department' : 'New Department'"
+    [modal]="true"
+    [style]="{ width: '480px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-4 pt-2">
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">Department Name <span class="text-red-400">*</span></label>
+            <input pInputText [(ngModel)]="form.departmentName" maxlength="254" />
+        </div>
+
+        @if (isSuper) {
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Company <span class="text-red-400">*</span></label>
+                <p-select
+                    [(ngModel)]="form.organizationId"
+                    [options]="organizations"
+                    optionLabel="organizationName"
+                    optionValue="organizationId"
+                    placeholder="Select company"
+                    styleClass="w-full"
+                />
+            </div>
+        }
+
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">Description</label>
+            <textarea pTextarea [(ngModel)]="form.description" rows="4" maxlength="254" class="w-full"></textarea>
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button
+            [label]="editMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="save()"
+            [disabled]="!form.departmentName?.trim() || (isSuper && !form.organizationId)"
+        />
+    </ng-template>
+</p-dialog>

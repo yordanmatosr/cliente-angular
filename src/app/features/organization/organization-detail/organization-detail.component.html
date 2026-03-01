@@ -1,4 +1,6 @@
 <p-toast />
+<p-confirmDialog />
+<p-menu #deptMenu [model]="deptMenuItems" [popup]="true" />
 
 <!-- Back button -->
 <div class="mb-4">
@@ -38,11 +40,89 @@
     }
 </div>
 
-<!-- Departments (Phase 5 - Department CRUD) -->
+<!-- Departments -->
 <div class="card">
-    <div class="flex items-center gap-2 mb-4">
-        <i class="pi pi-building text-xl text-muted-color"></i>
-        <h4 class="m-0">Departments</h4>
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+            <i class="pi pi-building text-xl text-muted-color"></i>
+            <h4 class="m-0">Departments</h4>
+        </div>
+        <p-button label="New Department" icon="pi pi-plus" size="small" (onClick)="openCreateDept()" />
     </div>
-    <p class="text-muted-color text-sm">Department list will be available in the next phase.</p>
+
+    @if (deptLoading) {
+        <div class="flex justify-center py-6">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <p-table
+            [value]="departments"
+            dataKey="departmentId"
+            styleClass="p-datatable-sm"
+        >
+            <ng-template #header>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th style="width: 4rem"></th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-dept>
+                <tr>
+                    <td>
+                        <a [routerLink]="['/group/group-detail', dept.departmentId]" class="dept-link">
+                            {{ dept.departmentName }}
+                        </a>
+                    </td>
+                    <td>{{ dept.description }}</td>
+                    <td>
+                        <p-button
+                            icon="pi pi-ellipsis-h"
+                            [text]="true"
+                            [rounded]="true"
+                            (onClick)="setDeptMenuItems(dept); deptMenu.toggle($event)"
+                        />
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="3" class="text-center py-6 text-muted-color">No departments yet.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    }
 </div>
+
+<!-- Department Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="deptDialogVisible"
+    [header]="deptEditMode ? 'Edit Department' : 'New Department'"
+    [modal]="true"
+    [style]="{ width: '420px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-4 pt-2">
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">Department Name <span class="text-red-400">*</span></label>
+            <input pInputText [(ngModel)]="deptForm.departmentName" maxlength="254" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">Description</label>
+            <textarea pTextarea [(ngModel)]="deptForm.description" rows="3" maxlength="254" class="w-full"></textarea>
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="deptDialogVisible = false" />
+        <p-button
+            [label]="deptEditMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="saveDept()"
+            [disabled]="!deptForm.departmentName?.trim()"
+        />
+    </ng-template>
+</p-dialog>
