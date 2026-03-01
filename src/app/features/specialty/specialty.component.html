@@ -1,4 +1,123 @@
-<div class="card">
-    <h4>Specialty</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-confirmDialog />
+<p-menu #actionMenu [model]="menuItems" [popup]="true" />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">Specialties</span>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="New Specialty" icon="pi pi-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="specialties"
+    [loading]="loading"
+    dataKey="specialtyId"
+    [globalFilterFields]="['specialtyDescription']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [defaultSortOrder]="-1"
+    sortField="countClinicians"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="specialtyDescription">Specialty Name <p-sortIcon field="specialtyDescription" /></th>
+            <th pSortableColumn="countClinicians" style="width: 10rem">Testers <p-sortIcon field="countClinicians" /></th>
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-specialty>
+        <tr>
+            <td>{{ specialty.specialtyDescription }}</td>
+            <td>{{ specialty.countClinicians ?? 0 }}</td>
+            <td>
+                <p-button
+                    icon="pi pi-ellipsis-h"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="setMenuItems(specialty); actionMenu.toggle($event)"
+                />
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td colspan="3" class="text-center py-8 text-muted-color">No specialties found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editMode ? 'Edit Specialty' : 'New Specialty'"
+    [modal]="true"
+    [style]="{ width: '440px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    @if (optionsLoading) {
+        <div class="flex justify-center py-6">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <div class="flex flex-col gap-4 pt-2">
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Name <span class="text-red-400">*</span></label>
+                <input pInputText [(ngModel)]="form.specialtyDescription" maxlength="254" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Type <span class="text-red-400">*</span></label>
+                <p-select
+                    [(ngModel)]="form.clinicianTypeId"
+                    [options]="clinicianTypes"
+                    optionLabel="typeName"
+                    optionValue="typeId"
+                    placeholder="Select type"
+                    styleClass="w-full"
+                />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Prof Designation Type <span class="text-red-400">*</span></label>
+                <p-select
+                    [(ngModel)]="form.profDesignationTypeId"
+                    [options]="profDesTypes"
+                    optionLabel="profDesignationTypeDetail"
+                    optionValue="profDesignationTypeId"
+                    placeholder="Select prof designation"
+                    styleClass="w-full"
+                />
+            </div>
+        </div>
+    }
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button
+            [label]="editMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="save()"
+            [disabled]="optionsLoading || !form.specialtyDescription?.trim() || !form.clinicianTypeId || !form.profDesignationTypeId"
+        />
+    </ng-template>
+</p-dialog>
