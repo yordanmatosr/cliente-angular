@@ -1,0 +1,195 @@
+.guru-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 18px;
+    background: radial-gradient(1200px 500px at 50% 0%, #f7f9fc 0%, #eef2f7 60%);
+}
+
+.guru-card {
+    width: min(1120px, 100%);
+    background: #ffffff;
+    border: 1px solid #e6edf5;
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(16, 24, 40, 0.10);
+    overflow: hidden;
+    position: relative;
+}
+
+.guru-topbar {
+    position: absolute;
+    top: 10px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1;
+}
+
+.guru-logo {
+    height: 28px;
+    width: auto;
+}
+
+.guru-brand {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.4px;
+    color: #1f2a37;
+}
+
+.guru-content {
+    padding: 44px 40px 28px;
+    text-align: center;
+}
+
+.guru-title {
+    margin: 4px 0 6px;
+    font-size: 24px;
+    line-height: 1.12;
+    letter-spacing: -0.6px;
+    color: #2a3a4f;
+    font-weight: 700;
+}
+
+.guru-sub {
+    max-width: 900px;
+    margin: 0 auto 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #5b677a;
+
+    strong { color: #2a3a4f; }
+}
+
+.guru-hero-container {
+    margin: 0 auto 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 16px 24px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 24px rgba(16, 24, 40, 0.12);
+    max-width: 800px;
+}
+
+.guru-hero {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+
+    img {
+        width: 100%;
+        max-width: 720px;
+        max-height: 32vh;
+        height: auto;
+        object-fit: contain;
+    }
+}
+
+.guru-login-section {
+    margin: 8px auto 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.guru-login-card {
+    width: min(380px, 100%);
+    background: #ffffff;
+    border: 1px solid #e6edf5;
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 16px rgba(16, 24, 40, 0.08);
+    text-align: left;
+
+    h5 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #1f2a37;
+    }
+}
+
+.guru-link {
+    color: var(--p-primary-color);
+    font-size: 0.75rem;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.guru-features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.guru-feat {
+    border: 1px solid #e6edf5;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+    box-shadow: 0 4px 8px rgba(16, 24, 40, 0.05);
+    text-align: left;
+
+    p {
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.4;
+        color: #5b677a;
+    }
+}
+
+.guru-feat-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 12px;
+    color: #2a3a4f;
+    margin-bottom: 4px;
+}
+
+.guru-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #eef4ff;
+    border: 1px solid #dbe7ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 11px;
+    color: #2b4a7f;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .guru-content { padding: 20px; }
+    .guru-features { grid-template-columns: 1fr; }
+    .guru-hero-container { padding: 16px; max-width: 95%; }
+}
+
+@media (max-width: 576px) {
+    .guru-wrap { padding: 16px 10px; }
+
+    .guru-topbar {
+        position: static;
+        padding: 10px 14px;
+        border-bottom: 1px solid #e6edf5;
+    }
+
+    .guru-content { padding: 14px 16px 10px; }
+    .guru-title { font-size: 20px; }
+    .guru-sub { font-size: 13px; }
+    .guru-hero-container { padding: 12px; }
+    .guru-login-card { padding: 12px 14px; }
+}

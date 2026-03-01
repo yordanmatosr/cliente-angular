@@ -7,6 +7,7 @@ import { roleGuard } from './app/core/guards/role.guard';
 export const appRoutes: Routes = [
     // Public routes
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
+    { path: 'guru', loadChildren: () => import('./app/pages/guru/guru.routes') },
     { path: 'notfound', component: Notfound },
 
     // Protected routes — all require auth

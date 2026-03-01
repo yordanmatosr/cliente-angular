@@ -1,0 +1,94 @@
+<div class="guru-wrap">
+    <main class="guru-card" role="main">
+
+        <!-- Logo top-left -->
+        <header class="guru-topbar">
+            <img src="/img/guru-logo.png" alt="GURU logo" class="guru-logo" />
+            <span class="guru-brand">GURU</span>
+        </header>
+
+        <!-- Content -->
+        <section class="guru-content">
+            <h1 class="guru-title">Build the Right Truck — With Confidence</h1>
+            <p class="guru-sub">
+                GURU guides truck specifications across
+                <strong>over 1,000,000+</strong> possible configurations,
+                helping match real-world needs to the right solution — fast.
+            </p>
+
+            <!-- Hero + login -->
+            <div class="guru-hero-container">
+                <div class="guru-hero">
+                    <img src="/img/guru-kiosk-truck-hero-3.png" alt="GURU truck configuration" />
+                </div>
+
+                <div class="guru-login-section">
+                    <div class="guru-login-card">
+                        <h5>Log in</h5>
+
+                        @if (errorMessage) {
+                            <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-2" />
+                        }
+
+                        <div class="flex flex-col gap-2">
+                            <input
+                                pInputText
+                                type="text"
+                                placeholder="Username"
+                                [(ngModel)]="username"
+                                (keyup.enter)="login()"
+                                class="w-full"
+                            />
+                            <p-password
+                                [(ngModel)]="password"
+                                placeholder="Password"
+                                [feedback]="false"
+                                [toggleMask]="true"
+                                styleClass="w-full"
+                                inputStyleClass="w-full"
+                                (keyup.enter)="login()"
+                            />
+                            <p-button
+                                label="Log In"
+                                styleClass="w-full"
+                                [loading]="loading"
+                                [disabled]="!isValid"
+                                (onClick)="login()"
+                            />
+                            <div class="flex justify-between mt-1">
+                                <a routerLink="/auth/login" class="guru-link">eScoreIT login</a>
+                                <a routerLink="/guru/register" class="guru-link">Register</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature cards -->
+            <div class="guru-features">
+                <div class="guru-feat">
+                    <div class="guru-feat-title">
+                        <div class="guru-icon">1</div>
+                        1,000,000+ Combinations
+                    </div>
+                    <p>Evaluates complex, interdependent configuration paths to surface best-fit solutions.</p>
+                </div>
+                <div class="guru-feat">
+                    <div class="guru-feat-title">
+                        <div class="guru-icon">2</div>
+                        Guided, Not Guesswork
+                    </div>
+                    <p>A structured, question-driven experience replaces tribal knowledge and manual spec checks.</p>
+                </div>
+                <div class="guru-feat">
+                    <div class="guru-feat-title">
+                        <div class="guru-icon">3</div>
+                        Detailed, Actionable Report
+                    </div>
+                    <p>Produces a clean, structured output highlighting must-haves, trade-offs, and alignment.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>

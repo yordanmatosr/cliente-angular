@@ -63,6 +63,14 @@ export class AuthService {
         );
     }
 
+    signupGuruTest(data: {
+        username: string; email: string; firstname: string; middlename: string;
+        lastname: string; phoneNumber: string; address: string;
+        specialtyId: number; orgId: number;
+    }): Observable<any> {
+        return this.http.post<any>(`${environment.apiUrl}/auth/signupGuruTest`, { ...data, isGenerated: false });
+    }
+
     clearUser(): void {
         localStorage.removeItem(STORAGE_KEY);
         this.currentUserSubject.next(null);
