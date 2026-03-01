@@ -33,5 +33,5 @@ export class ExamService {
     reportExam(examId: number, userId: number, clinicianAssessmentId: number) { return this.http.post<any>(`${this.API}/reportexam`, { examId, userId, clinicianAssessmentId }); }
     reportChecklist(examId: number, userId: number, clinicianAssessmentId: number) { return this.http.post<any>(`${this.API}/reportchecklist`, { examId, userId, clinicianAssessmentId }); }
     orgReporting(organizationId: number, intervalenum: any) { return this.http.post<any>(`${this.API}/orgreporting`, { organizationId, intervalenum }); }
-    alterExam(assessmentId: number, userId: number, action: 'copy' | 'edit') { return this.http.post<any>(`${this.API}/alterexamstate/${action}`, { clinicianAssessmentId: assessmentId, userId }); }
+    alterExam(assessmentId: number, userId: number, action: 'copy' | 'edit' | 'delete') { return this.http.post<any>(`${this.API}/alterexamstate/${action}`, { clinicianAssessmentId: assessmentId, userId }); }
 }

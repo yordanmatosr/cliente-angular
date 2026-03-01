@@ -1,4 +1,165 @@
-<div class="card">
-    <h4>Exam</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-confirmDialog />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">My Exams</span>
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="exams"
+    [loading]="loading"
+    dataKey="clinicianAssessmentId"
+    [globalFilterFields]="['examName', 'examType', 'status']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    sortMode="multiple"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="clinicianAssessmentId">Report ID <p-sortIcon field="clinicianAssessmentId" /></th>
+            <th pSortableColumn="examName">Exam Name <p-sortIcon field="examName" /></th>
+            <th pSortableColumn="examType">Type <p-sortIcon field="examType" /></th>
+            <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+            <th class="text-center" style="width: 10rem">Score / Action</th>
+            <th style="width: 5rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-exam>
+        <tr>
+            <td>{{ exam.clinicianAssessmentId }}</td>
+            <td>{{ exam.examName }}</td>
+            <td>{{ exam.examType | titlecase }}</td>
+            <td>
+                <p-tag
+                    [value]="exam.status | uppercase"
+                    [severity]="statusSeverity(exam.status)"
+                />
+            </td>
+            <td class="text-center">
+                @if (canPlay(exam)) {
+                    <p-button
+                        icon="pi pi-play"
+                        severity="success"
+                        [rounded]="true"
+                        size="small"
+                        pTooltip="Take Exam"
+                        (onClick)="onPlay(exam)"
+                    />
+                } @else if (isComplete(exam)) {
+                    @if (exam.examType?.toLowerCase() === 'exam') {
+                        <p-tag
+                            [value]="(exam.examScore?.clinicScore ?? 0) + '% — ' + (exam.examScore?.passed ? 'Pass' : 'Fail')"
+                            [severity]="exam.examScore?.passed ? 'success' : 'danger'"
+                            styleClass="cursor-pointer"
+                            (click)="onShowReport(exam)"
+                            pTooltip="View Report"
+                        />
+                    } @else if (exam.examType?.toLowerCase() === 'checklist') {
+                        <p-tag
+                            [value]="checklistScore(exam)"
+                            severity="success"
+                            styleClass="cursor-pointer"
+                            (click)="onShowReport(exam)"
+                            pTooltip="View Report"
+                        />
+                    } @else {
+                        <p-button
+                            label="Report"
+                            icon="pi pi-file"
+                            [text]="true"
+                            size="small"
+                            (onClick)="onShowReport(exam)"
+                        />
+                    }
+                }
+            </td>
+            <td>
+                <div class="flex gap-1 justify-center">
+                    @if (isComplete(exam)) {
+                        <p-button
+                            icon="pi pi-external-link"
+                            [text]="true"
+                            [rounded]="true"
+                            size="small"
+                            pTooltip="View Report"
+                            (onClick)="onShowReport(exam)"
+                        />
+                    }
+                    <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="danger"
+                        size="small"
+                        pTooltip="Delete"
+                        (onClick)="confirmDelete(exam)"
+                    />
+                </div>
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td colspan="6" class="text-center py-8 text-muted-color">No exams found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Terms & Conditions Dialog -->
+<p-dialog
+    [(visible)]="termsVisible"
+    header="Terms & Conditions — User Rights"
+    [modal]="true"
+    [style]="{ width: '580px' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-3 pt-2 text-sm leading-relaxed">
+        <p>By proceeding, you agree to the eScoreIT Software terms and conditions.</p>
+        <p>
+            This assessment is confidential and is provided for evaluation purposes only.
+            You may not copy, distribute, or transmit any portion of this assessment
+            without prior written permission.
+        </p>
+        <p>
+            Your responses will be recorded and used to evaluate your knowledge and
+            proficiency in the assessed areas.
+        </p>
+        <div class="flex items-center gap-2 mt-3">
+            <p-checkbox [(ngModel)]="termsAccepted" [binary]="true" inputId="terms-check" />
+            <label for="terms-check" class="cursor-pointer font-medium">
+                I agree to the terms and conditions of eScoreIT software
+            </label>
+        </div>
+    </div>
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="termsVisible = false" />
+        <p-button label="Accept" icon="pi pi-check" [disabled]="!termsAccepted" (onClick)="acceptTerms()" />
+    </ng-template>
+</p-dialog>
+
+<!-- Exam Dialog -->
+@if (currentExam && examDialogVisible) {
+    <app-exam-dialog
+        [exam]="currentExam"
+        [userId]="userId"
+        (closed)="onExamDialogClose($event)"
+    />
+}

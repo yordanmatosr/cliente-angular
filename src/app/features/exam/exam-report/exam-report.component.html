@@ -1,0 +1,158 @@
+<p-toast />
+
+<div class="flex flex-col gap-4">
+    <!-- Header bar -->
+    <div class="flex items-center justify-between mb-2">
+        <p-button
+            label="Back"
+            icon="pi pi-arrow-left"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="goBack()"
+        />
+        <h2 class="text-xl font-semibold m-0">
+            {{ examType === 'checklist' ? 'Checklist Report' : 'Exam Report' }}
+        </h2>
+        <span class="text-muted-color text-sm">Report #{{ clinicianAssessmentId }}</span>
+    </div>
+
+    @if (loading) {
+        <div class="flex justify-center py-16">
+            <p-progressspinner />
+        </div>
+    }
+
+    <!-- EXAM type report -->
+    @if (!loading && examType === 'exam' && reportData) {
+        <!-- Organization header -->
+        <div class="p-4 bg-surface-50 rounded border flex items-center justify-between">
+            <div>
+                <div class="text-lg font-semibold">{{ organization?.organizationName }}</div>
+                <div class="text-muted-color text-sm">{{ exam?.examName }}</div>
+            </div>
+            <p-tag
+                [value]="passed ? 'PASS' : 'FAIL'"
+                [severity]="passed ? 'success' : 'danger'"
+                styleClass="text-base px-4 py-2"
+            />
+        </div>
+
+        <!-- Info cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Clinician info -->
+            <p-card header="Tester Information">
+                <table class="w-full text-sm">
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="py-2 pr-4 text-muted-color font-medium">Name</td>
+                            <td class="py-2 font-semibold">{{ fullName(clinician) }}</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 pr-4 text-muted-color font-medium">Email</td>
+                            <td class="py-2">{{ clinician?.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-4 text-muted-color font-medium">Specialty</td>
+                            <td class="py-2">{{ clinician?.specialtyDescription }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </p-card>
+
+            <!-- Assessment info -->
+            <p-card header="Assessment Information">
+                <table class="w-full text-sm">
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="py-2 pr-4 text-muted-color font-medium">Exam Name</td>
+                            <td class="py-2 font-semibold">{{ exam?.examName }}</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-2 pr-4 text-muted-color font-medium">Date Completed</td>
+                            <td class="py-2">{{ dateCompleted }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-4 text-muted-color font-medium">Department</td>
+                            <td class="py-2">{{ clinician?.department?.departmentName }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </p-card>
+        </div>
+
+        <!-- Score breakdown -->
+        <p-card header="Score Breakdown">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col items-center py-4 border-r border-surface-200">
+                    <div class="text-muted-color font-medium mb-2">Tester Score</div>
+                    <div
+                        class="text-5xl font-bold"
+                        [class.text-green-600]="passed"
+                        [class.text-red-600]="!passed"
+                    >
+                        {{ score }}%
+                    </div>
+                </div>
+                <div class="flex flex-col items-center py-4">
+                    <div class="text-muted-color font-medium mb-2">Passing Score</div>
+                    <div class="text-5xl font-bold">{{ passingScore }}%</div>
+                    <div class="text-xs text-muted-color mt-2">(recommended minimum to pass)</div>
+                </div>
+            </div>
+        </p-card>
+
+        <!-- Incorrect answers -->
+        @if (incorrectAnswersList && incorrectAnswersList.length > 0) {
+            <p-card header="Incorrectly Answered Questions">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-surface-100">
+                            <th class="p-3 text-left border border-surface-300" style="width: 65%">Question</th>
+                            <th class="p-3 text-left border border-surface-300">Your Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (q of incorrectAnswersList; track $index) {
+                            <tr class="border-b border-surface-200">
+                                <td class="p-3 border border-surface-200">
+                                    <pre class="whitespace-pre-wrap font-sans text-sm m-0">{{ q.question_text }}</pre>
+                                </td>
+                                <td class="p-3 border border-surface-200 text-red-600">
+                                    <pre class="whitespace-pre-wrap font-sans text-sm m-0">{{ q.wrong_answer }}</pre>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </p-card>
+        }
+    }
+
+    <!-- CHECKLIST type report -->
+    @if (!loading && examType === 'checklist' && checklistData) {
+        <p-card header="Checklist Report">
+            <pre class="whitespace-pre-wrap font-sans text-sm">{{ checklistData | json }}</pre>
+        </p-card>
+    }
+
+    <!-- FORM / GUIDED type report -->
+    @if (!loading && (examType === 'form' || examType === 'guided' || examType === 'guided_selling') && reportData) {
+        <p-card [header]="exam?.examName ?? 'Report'">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <table class="text-sm w-full">
+                    <tbody>
+                        <tr class="border-b"><td class="py-2 pr-3 text-muted-color">Name</td><td class="py-2 font-semibold">{{ fullName(clinician) }}</td></tr>
+                        <tr class="border-b"><td class="py-2 pr-3 text-muted-color">Email</td><td class="py-2">{{ clinician?.email }}</td></tr>
+                        <tr><td class="py-2 pr-3 text-muted-color">Completed</td><td class="py-2">{{ dateCompleted }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex flex-col items-center py-4">
+                <div class="text-muted-color font-medium mb-2">Score</div>
+                <div class="text-5xl font-bold" [class.text-green-600]="passed" [class.text-red-600]="!passed">
+                    {{ score }}%
+                </div>
+            </div>
+        </p-card>
+    }
+</div>
