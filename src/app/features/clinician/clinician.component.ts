@@ -2,6 +2,7 @@ import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -32,7 +33,7 @@ import { USER_STATUS_INFO, DEFAULT_PASSWORD } from '../../core/constants/status.
     selector: 'app-clinician',
     standalone: true,
     imports: [
-        CommonModule, FormsModule,
+        CommonModule, FormsModule, RouterModule,
         TableModule, ButtonModule, DialogModule,
         InputTextModule, PasswordModule, SelectModule, MultiSelectModule,
         CheckboxModule, TagModule, MenuModule, ConfirmDialogModule,

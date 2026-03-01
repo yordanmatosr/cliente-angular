@@ -1,4 +1,4 @@
-type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
+export type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 
 // ---- Clinician / User status ----
 

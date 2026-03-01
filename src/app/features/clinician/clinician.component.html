@@ -46,7 +46,9 @@
 
     <ng-template #body let-c>
         <tr>
-            <td>{{ fullName(c) }}</td>
+            <td>
+                <a [routerLink]="['/tester/clinician-detail', c.clinicianId]" class="text-primary hover:underline">{{ fullName(c) }}</a>
+            </td>
             <td>{{ specialtyNames(c) }}</td>
             <td>{{ c.clinicianTypeResponse?.typeName }}</td>
             <td>

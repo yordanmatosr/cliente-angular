@@ -1,0 +1,109 @@
+<p-toast />
+
+<!-- Back button -->
+<div class="mb-4">
+    <p-button label="Back to Users" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" routerLink="/user" />
+</div>
+
+<!-- User summary card -->
+<div class="card mb-4">
+    @if (loading()) {
+        <div class="flex justify-center py-8">
+            <p-progressspinner />
+        </div>
+    } @else if (user()) {
+        <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <h3 class="m-0">{{ fullName(user()) || user().username }}</h3>
+                <div class="flex items-center gap-2">
+                    <p-tag [value]="roleLabel(user().roles)" severity="info" />
+                    @if (user().isDisabled) {
+                        <p-tag value="Disabled" severity="danger" />
+                    } @else {
+                        <p-tag [value]="statusInfo(user().status).label" [severity]="statusInfo(user().status).severity" />
+                    }
+                </div>
+            </div>
+            <hr class="border-surface-200 dark:border-surface-700" />
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="font-medium text-muted-color">Username</span>
+                    <p class="mt-1">{{ user().username || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Email</span>
+                    <p class="mt-1">{{ user().email || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Full Name</span>
+                    <p class="mt-1">{{ fullName(user()) || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Department</span>
+                    <p class="mt-1">{{ user().department?.departmentName || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Organization</span>
+                    <p class="mt-1">{{ user().department?.organization?.organizationName || '—' }}</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Exam list -->
+<div class="card">
+    <div class="flex items-center gap-2 mb-4">
+        <i class="pi pi-file-check text-xl text-muted-color"></i>
+        <h4 class="m-0">Exams</h4>
+    </div>
+
+    @if (examLoading()) {
+        <div class="flex justify-center py-6">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <p-table
+            [value]="examList()"
+            dataKey="clinicianAssessmentId"
+            styleClass="p-datatable-sm"
+        >
+            <ng-template #header>
+                <tr>
+                    <th>Exam</th>
+                    <th style="width: 10rem">Status</th>
+                    <th style="width: 7rem"></th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-exam>
+                <tr>
+                    <td>{{ exam.examName }}</td>
+                    <td>
+                        <p-tag
+                            [value]="exam.status"
+                            [severity]="examStatusSeverity(exam.status)"
+                        />
+                    </td>
+                    <td>
+                        @if (exam.status?.toLowerCase() === EXAM_COMPLETE) {
+                            <p-button
+                                label="Report"
+                                icon="pi pi-chart-bar"
+                                size="small"
+                                [text]="true"
+                                (onClick)="goToReport(exam)"
+                            />
+                        }
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="3" class="text-center py-6 text-muted-color">No exams assigned.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    }
+</div>
