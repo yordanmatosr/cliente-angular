@@ -1,0 +1,20 @@
+.period-card {
+    background: var(--p-surface-0);
+    border-color: var(--p-surface-200);
+    color: var(--p-text-color);
+
+    &:hover {
+        border-color: var(--p-primary-color);
+        background: var(--p-primary-50);
+    }
+
+    &.period-selected {
+        border-color: var(--p-primary-color);
+        background: var(--p-primary-50);
+        color: var(--p-primary-color);
+    }
+
+    i.pi {
+        color: var(--p-primary-color);
+    }
+}

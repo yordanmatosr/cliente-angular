@@ -1,4 +1,165 @@
-<div class="card">
-    <h4>Reports</h4>
-    <p>Coming soon.</p>
+<p-toast />
+
+<!-- Organizations table (super only) -->
+@if (isSuper) {
+    <p-table
+        #dtOrgs
+        [value]="organizations"
+        [loading]="orgsLoading"
+        dataKey="organizationId"
+        [globalFilterFields]="['organizationName', 'description']"
+        [paginator]="true"
+        [rows]="5"
+        styleClass="p-datatable-gridlines mb-4"
+        selectionMode="single"
+        [(selection)]="selectedOrgId"
+    >
+        <ng-template #caption>
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-semibold">Companies</span>
+                <p-iconfield>
+                    <p-inputicon styleClass="pi pi-search" />
+                    <input pInputText type="text" (input)="onGlobalFilterOrgs($event)" placeholder="Search..." />
+                </p-iconfield>
+            </div>
+        </ng-template>
+        <ng-template #header>
+            <tr>
+                <th pSortableColumn="organizationName">Name <p-sortIcon field="organizationName" /></th>
+                <th pSortableColumn="description">Description <p-sortIcon field="description" /></th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-org>
+            <tr
+                [class.bg-primary-50]="org.organizationId === selectedOrgId"
+                [class.font-semibold]="org.organizationId === selectedOrgId"
+                class="cursor-pointer hover:bg-surface-100"
+                (click)="selectOrg(org)"
+            >
+                <td>{{ org.organizationName }}</td>
+                <td>{{ org.description }}</td>
+            </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+            <tr><td colspan="2" class="text-center py-6 text-muted-color">No companies found.</td></tr>
+        </ng-template>
+    </p-table>
+}
+
+<!-- Period filter cards -->
+<div class="grid grid-cols-3 gap-3 mb-4">
+    @for (p of PERIODS; track p.value) {
+        <div
+            class="period-card flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all"
+            [class.period-selected]="periodType === p.value"
+            (click)="selectPeriod(p.value)"
+        >
+            <i [class]="p.icon + ' text-3xl'"></i>
+            <span class="font-semibold text-sm">{{ p.label }}</span>
+            @if (periodType === p.value) {
+                <i class="pi pi-check text-xs text-green-600"></i>
+            }
+        </div>
+    }
 </div>
+
+<!-- Results table -->
+@if (selectedOrgId) {
+    <p-table
+        #dtReport
+        [value]="reportData"
+        [loading]="reportLoading"
+        dataKey="clinicianReportDataId"
+        [globalFilterFields]="['userClinician.firstname', 'userClinician.lastname', 'userClinician.department.departmentName', 'exam.examName']"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        sortMode="multiple"
+        styleClass="p-datatable-gridlines"
+    >
+        <ng-template #caption>
+            <div class="flex justify-between items-center flex-wrap gap-2">
+                <span class="text-lg font-semibold">{{ selectedOrgName }} — {{ periodLabel(periodType) }}</span>
+                <div class="flex items-center gap-2">
+                    <p-iconfield>
+                        <p-inputicon styleClass="pi pi-search" />
+                        <input pInputText type="text" (input)="onGlobalFilterReport($event)" placeholder="Search..." />
+                    </p-iconfield>
+                    @if (reportData.length > 0) {
+                        <p-button
+                            icon="pi pi-download"
+                            label="PDF"
+                            severity="secondary"
+                            [outlined]="true"
+                            size="small"
+                            pTooltip="Download PDF"
+                            (onClick)="downloadPdf(false)"
+                        />
+                        <p-button
+                            icon="pi pi-print"
+                            label="Print"
+                            severity="secondary"
+                            [outlined]="true"
+                            size="small"
+                            (onClick)="downloadPdf(true)"
+                        />
+                        <p-button
+                            icon="pi pi-file"
+                            label="CSV"
+                            severity="secondary"
+                            [outlined]="true"
+                            size="small"
+                            pTooltip="Download CSV"
+                            (onClick)="downloadCsv()"
+                        />
+                    }
+                </div>
+            </div>
+        </ng-template>
+
+        <ng-template #header>
+            <tr>
+                <th pSortableColumn="fullname">Full Name <p-sortIcon field="fullname" /></th>
+                <th pSortableColumn="userClinician.department.departmentName">Department <p-sortIcon field="userClinician.department.departmentName" /></th>
+                <th pSortableColumn="exam.examName">Exam <p-sortIcon field="exam.examName" /></th>
+                <th class="text-center" style="width: 8rem">Score %</th>
+                <th style="width: 5rem"></th>
+            </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+            <tr>
+                <td>{{ fullName(row) }}</td>
+                <td>{{ row.userClinician?.department?.departmentName }}</td>
+                <td>{{ row.exam?.examName }}</td>
+                <td class="text-center">
+                    <p-tag
+                        [value]="rowScore(row)"
+                        [severity]="rowSeverity(row)"
+                        styleClass="cursor-pointer"
+                        (click)="showReport(row)"
+                        pTooltip="View Report"
+                    />
+                </td>
+                <td class="text-center">
+                    <p-button
+                        icon="pi pi-external-link"
+                        [text]="true"
+                        [rounded]="true"
+                        size="small"
+                        pTooltip="View Report"
+                        (onClick)="showReport(row)"
+                    />
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="5" class="text-center py-8 text-muted-color">
+                    No results found for the selected period.
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+}
