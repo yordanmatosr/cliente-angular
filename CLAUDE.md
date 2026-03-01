@@ -137,7 +137,7 @@ export class ExamService {
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | 1 | Setup: proyecto, guards, interceptor, rutas, login | ✅ Completo |
-| 2 | Services: portar 19 servicios de React → Angular | ⏳ Pendiente |
+| 2 | Services: portar 15 servicios de React → Angular | ✅ Completo |
 | 3 | Auth: kiosk login, guru login | ⏳ Pendiente |
 | 4 | Shared: p-table base, p-dialog base, card summaries | ⏳ Pendiente |
 | 5 | CRUD simples: Organization → Department → Specialty → Clinician | ⏳ Pendiente |
