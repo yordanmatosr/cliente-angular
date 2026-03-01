@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Este es el **nuevo cliente Angular** de HCare/eScoreIT, reemplazando el cliente React legacy (`/home/yordan/Work/projects/HCare/client`). Migración en curso — NO modificar el proyecto React.
 
+**Repo:** independiente en `/home/yordan/Work/projects/client-angular/` (fuera del monorepo HCare)
 **Backend:** Spring Boot en `/home/yordan/Work/projects/HCare/server` (puerto 8443) — no cambia.
 
 ## Comandos de desarrollo
@@ -51,32 +52,35 @@ src/
 │   │   └── services/      # auth.service.ts, idle.service.ts (+ servicios de dominio en Fase 2)
 │   ├── shared/
 │   │   └── components/    # componentes reutilizables (tabla, modal, cards) — Fase 4
-│   ├── features/          # módulos de dominio con lazy loading
-│   │   ├── dashboard/     ✅ stub
-│   │   ├── organization/  ✅ stub
-│   │   ├── department/    ✅ stub
-│   │   ├── specialty/     ✅ stub
-│   │   ├── user/          ✅ stub
-│   │   ├── clinician/     ✅ stub
-│   │   ├── exam/          ✅ stub
-│   │   ├── reports/       ✅ stub
-│   │   ├── profile/       ✅ stub
-│   │   └── contact/       ✅ stub
+│   ├── features/          # módulos de dominio con lazy loading (cada uno: 3 archivos)
+│   │   ├── dashboard/     ✅ stub (html+scss+ts)
+│   │   ├── organization/  ✅ stub (html+scss+ts)
+│   │   ├── department/    ✅ stub (html+scss+ts)
+│   │   ├── specialty/     ✅ stub (html+scss+ts)
+│   │   ├── user/          ✅ stub (html+scss+ts)
+│   │   ├── clinician/     ✅ stub (html+scss+ts)
+│   │   ├── exam/          ✅ stub (html+scss+ts)
+│   │   ├── reports/       ✅ stub (html+scss+ts)
+│   │   ├── profile/       ✅ stub (html+scss+ts)
+│   │   └── contact/       ✅ stub (html+scss+ts)
 │   ├── layout/            # Sakai shell — no modificar estructura, solo app.menu.ts
 │   └── pages/
-│       ├── auth/          # login.ts (funcional), kiosk (pendiente), guru (pendiente)
+│       ├── auth/          # login.component.ts/.html/.scss (funcional)
+│       │                  # access.component.ts/.html/.scss
+│       │                  # error.component.ts/.html/.scss
+│       │                  # kiosk (pendiente Fase 3), guru (pendiente Fase 3)
 │       └── notfound/
-├── assets/                # Sakai assets (clonado de cetincakiroglu/sakai-assets)
+├── assets/                # Sakai assets (incorporados directamente)
 ├── app.config.ts          # providers globales: interceptor, PrimeNG, router
 └── app.routes.ts          # rutas completas con authGuard + roleGuard
 ```
 
 ### Autenticación
-- `AuthService` — BehaviorSubject<CurrentUser>, login/logout, localStorage key: `currentuser`
-- `authInterceptor` — agrega `Authorization: Bearer <token>` a todos los requests HTTP
-- `authGuard` — redirige a `/auth/login` si no autenticado o token expirado
+- `AuthService` — BehaviorSubject<CurrentUser>, login/logout/clearUser, localStorage key: `currentuser`
+- `authInterceptor` — agrega `Authorization: Bearer <token>` + maneja 401 (idle.stop + logout)
+- `authGuard` — llama `clearUser()` (sin navegar) y retorna UrlTree a `/auth/login`
 - `roleGuard` — lee `route.data['roles']`, redirige a `/auth/access` si no autorizado
-- `IdleService` — logout automático tras 10 min de inactividad (RxJS + debounceTime)
+- `IdleService` — logout automático tras 10 min de inactividad; re-entrant (stop+start seguro)
 
 ### CurrentUser interface
 ```typescript
@@ -141,6 +145,29 @@ export class ExamService {
 | 7 | Exam workflow + Question types (más complejo) | ⏳ Pendiente |
 | 8 | Reports + Charts + PDF | ⏳ Pendiente |
 | 9 | Dashboard, Profile, Documents, FAQ | ⏳ Pendiente |
+
+## Fase 1 — Detalle de lo completado
+
+### Componentes convertidos a 3 archivos
+Todos los componentes fueron migrados de template inline a la convención de 3 archivos:
+- **10 feature stubs:** dashboard, organization, department, specialty, user, clinician, exam, reports, profile, contact
+- **3 páginas auth:** `login.component`, `access.component`, `error.component` (renombradas desde `login.ts`, `access.ts`, `error.ts`)
+
+### Refactors en core (auth)
+- `AuthService`: extraído `clearUser()` separado de `logout()` para evitar doble navegación desde guards
+- `authGuard`: usa `clearUser()` en lugar de `logout()` — evita doble navegación al mismo destino
+- `IdleService`: eliminado `NgZone` (innecesario en app zoneless), `destroy$` se reinicia en cada `start()`, llama `stop()` antes de disparar logout
+- `authInterceptor`: agrega `idle.stop()` antes de `logout()` en el handler del 401
+
+### Pendiente de testing manual (Fase 1)
+Verificar con backend en localhost:8443:
+1. `/auth/login` carga sin sesión
+2. Login con credenciales inválidas → mensaje de error
+3. Login con credenciales válidas → redirige a `/dashboard`
+4. Navegar a ruta protegida sin sesión → redirige a `/auth/login`
+5. Navegar a ruta con rol insuficiente → redirige a `/auth/access`
+6. DevTools Network → requests tienen header `Authorization: Bearer ...`
+7. Refresh con sesión activa → mantiene sesión (localStorage)
 
 ## Referencia al proyecto React original
 

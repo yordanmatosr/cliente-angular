@@ -1,0 +1,36 @@
+// Falcon values: $box-shadow: 0 7px 14px 0 rgba(59, 65, 94, 0.1), 0 3px 6px 0 rgba(0, 0, 0, 0.07)
+// Falcon primary: #2c7be5
+
+.login-card-wrapper {
+    border-radius: 56px;
+    padding: 0.3rem;
+    background: linear-gradient(180deg, var(--p-primary-color) 10%, transparent 30%);
+}
+
+.login-card {
+    border-radius: 53px;
+    box-shadow: 0 7px 14px 0 rgba(59, 65, 94, 0.1), 0 3px 6px 0 rgba(0, 0, 0, 0.07);
+    min-width: 320px;
+
+    @media (min-width: 640px) {
+        min-width: 460px;
+    }
+}
+
+.login-logo {
+    max-width: 280px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+}
+
+.login-link {
+    color: var(--p-primary-color);
+    font-size: 0.875rem;
+    text-decoration: none;
+
+    &:hover {
+        color: var(--p-primary-700);
+        text-decoration: underline;
+    }
+}
