@@ -7,47 +7,48 @@ import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
-import { DepartmentService } from '../../../core/services/department.service';
-import { UserService } from '../../../core/services/user.service';
+import { SpecialtyService } from '../../../core/services/specialty.service';
+import { ClinicianService } from '../../../core/services/clinician.service';
 import { TagSeverity, USER_STATUS_INFO } from '../../../core/constants/status.constants';
 
 @Component({
-    selector: 'app-department-detail',
+    selector: 'app-specialty-detail',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, TagModule, TableModule, ProgressSpinnerModule, ToastModule],
-    templateUrl: './department-detail.component.html',
-    styleUrl: './department-detail.component.scss',
+    imports: [CommonModule, RouterModule, ButtonModule, TagModule, TableModule, ProgressSpinnerModule, ToastModule, TooltipModule],
+    templateUrl: './specialty-detail.component.html',
+    styleUrl: './specialty-detail.component.scss',
     providers: [MessageService]
 })
-export class DepartmentDetailComponent implements OnInit {
+export class SpecialtyDetailComponent implements OnInit {
     private route = inject(ActivatedRoute);
-    private deptService = inject(DepartmentService);
-    private userService = inject(UserService);
+    private specialtyService = inject(SpecialtyService);
+    private clinicianService = inject(ClinicianService);
     private messageService = inject(MessageService);
     private destroyRef = inject(DestroyRef);
 
-    department = signal<any>(null);
+    specialty = signal<any>(null);
     loading = signal(true);
     clinicians = signal<any[]>([]);
     clinicianLoading = signal(false);
 
     readonly STATUS_INFO = USER_STATUS_INFO;
 
-    departmentId!: number;
+    specialtyId!: number;
 
     ngOnInit() {
-        this.departmentId = +this.route.snapshot.paramMap.get('id')!;
-        this.loadDepartment();
+        this.specialtyId = +this.route.snapshot.paramMap.get('id')!;
+        this.loadSpecialty();
     }
 
-    private loadDepartment() {
+    private loadSpecialty() {
         this.loading.set(true);
-        this.deptService.find(this.departmentId)
+        this.specialtyService.find(this.specialtyId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (data: any) => {
-                    this.department.set(data);
+                    this.specialty.set(data);
                     this.loading.set(false);
                     this.loadClinicians();
                 },
@@ -57,24 +58,27 @@ export class DepartmentDetailComponent implements OnInit {
 
     private loadClinicians() {
         this.clinicianLoading.set(true);
-        this.userService.cliniciansByDepartment(this.departmentId)
+        this.clinicianService.all()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (data: any[]) => { this.clinicians.set(data); this.clinicianLoading.set(false); },
+                next: (data: any[]) => {
+                    const filtered = data.filter(c =>
+                        c.specialtyResponses?.some((s: any) => s.specialtyId === this.specialtyId)
+                    );
+                    this.clinicians.set(filtered);
+                    this.clinicianLoading.set(false);
+                },
                 error: (err: any) => { this.showError(err); this.clinicianLoading.set(false); }
             });
     }
 
     fullName(c: any): string {
-        return [c?.firstname, c?.middlename, c?.lastname].filter(Boolean).join(' ');
+        const u = c?.userResponse;
+        return [u?.firstname, u?.middlename, u?.lastname].filter(Boolean).join(' ');
     }
 
-    statusDerivedSeverity(statusDerived: string): TagSeverity {
-        const s = statusDerived?.toLowerCase() ?? '';
-        if (s.includes('completed')) return 'success';
-        if (s === 'expired') return 'danger';
-        if (s === 'onboarding') return 'info';
-        return 'secondary';
+    statusInfo(status: number) {
+        return this.STATUS_INFO[status] ?? { label: 'Unknown', severity: 'secondary' as TagSeverity };
     }
 
     private showError(err: any) {

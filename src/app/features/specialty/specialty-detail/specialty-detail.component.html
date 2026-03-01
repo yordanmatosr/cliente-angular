@@ -1,0 +1,95 @@
+<p-toast />
+
+<!-- Back button -->
+<div class="mb-4">
+    <p-button label="Back to Specialties" icon="pi pi-arrow-left" severity="secondary" [outlined]="true" routerLink="/specialty" />
+</div>
+
+<!-- Specialty summary card -->
+<div class="card mb-4">
+    @if (loading()) {
+        <div class="flex justify-center py-8">
+            <p-progressspinner />
+        </div>
+    } @else if (specialty()) {
+        <div class="flex flex-col gap-3">
+            <h3 class="m-0">{{ specialty().specialtyDescription }}</h3>
+            <hr class="border-surface-200 dark:border-surface-700" />
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="font-medium text-muted-color">Clinician Type</span>
+                    <p class="mt-1">{{ specialty().clinicianType?.typeName || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Prof Designation</span>
+                    <p class="mt-1">{{ specialty().profDesignationType?.profDesignationDescription || '—' }}</p>
+                </div>
+                <div>
+                    <span class="font-medium text-muted-color">Total Testers</span>
+                    <p class="mt-1 font-semibold">{{ specialty().countClinicians ?? clinicians().length }}</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Clinician list -->
+<div class="card">
+    <div class="flex items-center gap-2 mb-4">
+        <i class="pi pi-users text-xl text-muted-color"></i>
+        <h4 class="m-0">Testers</h4>
+    </div>
+
+    @if (clinicianLoading()) {
+        <div class="flex justify-center py-6">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <p-table
+            [value]="clinicians()"
+            dataKey="clinicianId"
+            styleClass="p-datatable-sm"
+        >
+            <ng-template #header>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th style="width: 8rem">Status</th>
+                    <th style="width: 5rem"></th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-c>
+                <tr>
+                    <td>{{ fullName(c) }}</td>
+                    <td>
+                        <a [href]="'mailto:' + c.userResponse?.email" class="text-primary">{{ c.userResponse?.email }}</a>
+                    </td>
+                    <td>{{ c.userResponse?.department?.departmentName || '—' }}</td>
+                    <td>
+                        <p-tag
+                            [value]="statusInfo(c.userResponse?.status).label"
+                            [severity]="statusInfo(c.userResponse?.status).severity"
+                        />
+                    </td>
+                    <td>
+                        <p-button
+                            icon="pi pi-eye"
+                            [text]="true"
+                            [rounded]="true"
+                            pTooltip="View detail"
+                            [routerLink]="['/tester/clinician-detail', c.clinicianId]"
+                        />
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="5" class="text-center py-6 text-muted-color">No testers with this specialty.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    }
+</div>

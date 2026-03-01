@@ -45,7 +45,9 @@
 
     <ng-template #body let-specialty>
         <tr>
-            <td>{{ specialty.specialtyDescription }}</td>
+            <td>
+                <a [routerLink]="['/specialty/specialty-detail', specialty.specialtyId]" class="text-primary hover:underline">{{ specialty.specialtyDescription }}</a>
+            </td>
             <td>{{ specialty.countClinicians ?? 0 }}</td>
             <td>
                 <p-button

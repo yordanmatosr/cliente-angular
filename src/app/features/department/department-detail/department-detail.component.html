@@ -15,9 +15,7 @@
         <div class="flex flex-col gap-3">
             <div class="flex items-center justify-between">
                 <h3 class="m-0">{{ department().departmentName }}</h3>
-                <span class="text-sm text-muted-color">
-                    {{ department().organization?.organizationName }}
-                </span>
+                <span class="text-sm text-muted-color">{{ department().organization?.organizationName }}</span>
             </div>
             <hr class="border-surface-200 dark:border-surface-700" />
             <div>
@@ -28,11 +26,55 @@
     }
 </div>
 
-<!-- Users / Clinicians (Phase 6) -->
+<!-- Clinician list -->
 <div class="card">
     <div class="flex items-center gap-2 mb-4">
         <i class="pi pi-users text-xl text-muted-color"></i>
         <h4 class="m-0">Clinicians</h4>
     </div>
-    <p class="text-muted-color text-sm">Clinician list will be available in the next phase.</p>
+
+    @if (clinicianLoading()) {
+        <div class="flex justify-center py-6">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <p-table
+            [value]="clinicians()"
+            dataKey="userId"
+            styleClass="p-datatable-sm"
+        >
+            <ng-template #header>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Specialty</th>
+                    <th style="width: 9rem">Status</th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-c>
+                <tr>
+                    <td>{{ fullName(c) }}</td>
+                    <td>
+                        <a [href]="'mailto:' + c.email" class="text-primary">{{ c.email }}</a>
+                    </td>
+                    <td>{{ c.specialtyDescription || '—' }}</td>
+                    <td>
+                        @if (c.statusDerived) {
+                            <p-tag
+                                [value]="c.statusDerived"
+                                [severity]="statusDerivedSeverity(c.statusDerived)"
+                            />
+                        }
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="4" class="text-center py-6 text-muted-color">No clinicians in this department.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    }
 </div>
