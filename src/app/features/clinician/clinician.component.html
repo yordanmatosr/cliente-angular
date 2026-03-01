@@ -1,4 +1,209 @@
-<div class="card">
-    <h4>Clinician</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-confirmDialog />
+<p-menu #actionMenu [model]="menuItems" [popup]="true" />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">Clinicians</span>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="New Clinician" icon="pi pi-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="clinicians"
+    [loading]="loading"
+    dataKey="clinicianId"
+    [globalFilterFields]="['userResponse.firstname', 'userResponse.lastname', 'userResponse.email', 'userResponse.username']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    sortMode="multiple"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="userResponse.firstname">Tester <p-sortIcon field="userResponse.firstname" /></th>
+            <th>Specialty</th>
+            <th pSortableColumn="clinicianTypeResponse.typeName">Type <p-sortIcon field="clinicianTypeResponse.typeName" /></th>
+            <th pSortableColumn="userResponse.status" style="width: 8rem">Status <p-sortIcon field="userResponse.status" /></th>
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-c>
+        <tr>
+            <td>{{ fullName(c) }}</td>
+            <td>{{ specialtyNames(c) }}</td>
+            <td>{{ c.clinicianTypeResponse?.typeName }}</td>
+            <td>
+                <p-tag
+                    [value]="statusInfo(c.userResponse?.status).label"
+                    [severity]="statusInfo(c.userResponse?.status).severity"
+                />
+            </td>
+            <td>
+                <p-button
+                    icon="pi pi-ellipsis-h"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="setMenuItems(c); actionMenu.toggle($event)"
+                />
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td colspan="5" class="text-center py-8 text-muted-color">No clinicians found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editMode ? 'Edit Clinician' : 'New Clinician'"
+    [modal]="true"
+    [style]="{ width: '720px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    @if (optionsLoading) {
+        <div class="flex justify-center py-8">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <div class="flex flex-col gap-4 pt-2">
+
+            <!-- Name row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">First Name <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.firstname" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Middle Name</label>
+                    <input pInputText [(ngModel)]="form.middlename" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Last Name</label>
+                    <input pInputText [(ngModel)]="form.lastname" maxlength="20" />
+                </div>
+            </div>
+
+            <!-- Account row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Email <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.email" type="email" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Username <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.username" maxlength="50" autocomplete="username" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">
+                        Password @if (!editMode) { <span class="text-red-400">*</span> }
+                    </label>
+                    <p-password
+                        [(ngModel)]="form.password"
+                        [feedback]="false"
+                        [toggleMask]="true"
+                        styleClass="w-full"
+                        autocomplete="new-password"
+                    />
+                </div>
+            </div>
+
+            <!-- Location row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Company <span class="text-red-400">*</span></label>
+                    <p-select
+                        [(ngModel)]="form.organizationId"
+                        [options]="allOrganizations"
+                        optionLabel="organizationName"
+                        optionValue="organizationId"
+                        placeholder="Select company"
+                        styleClass="w-full"
+                        (onChange)="onOrgChange()"
+                    />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Department <span class="text-red-400">*</span></label>
+                    <p-select
+                        [(ngModel)]="form.department"
+                        [options]="filteredDepartments"
+                        optionLabel="departmentName"
+                        optionValue="departmentId"
+                        placeholder="Select department"
+                        styleClass="w-full"
+                        [disabled]="!form.organizationId"
+                    />
+                </div>
+            </div>
+
+            <!-- Clinician fields row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Phone Number</label>
+                    <input pInputText [(ngModel)]="form.phoneNumber" maxlength="16" placeholder="+1 555 000 0000" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Type <span class="text-red-400">*</span></label>
+                    <p-select
+                        [(ngModel)]="form.typeId"
+                        [options]="clinicianTypes"
+                        optionLabel="typeName"
+                        optionValue="typeId"
+                        placeholder="Select type"
+                        styleClass="w-full"
+                    />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Specialties</label>
+                    <p-multiselect
+                        [(ngModel)]="form.specialtiesRequest"
+                        [options]="specialties"
+                        optionLabel="specialtyDescription"
+                        optionValue="specialtyId"
+                        placeholder="Select specialties"
+                        styleClass="w-full"
+                        display="chip"
+                    />
+                </div>
+            </div>
+
+            <!-- 2FA -->
+            <div class="flex items-center gap-2">
+                <p-checkbox [(ngModel)]="form.isTwoFactorEnabled" [binary]="true" inputId="2fa" />
+                <label for="2fa" class="cursor-pointer">Two Factor Authentication</label>
+            </div>
+
+        </div>
+    }
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button
+            [label]="editMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="save()"
+            [disabled]="optionsLoading || !canSave"
+        />
+    </ng-template>
+</p-dialog>
