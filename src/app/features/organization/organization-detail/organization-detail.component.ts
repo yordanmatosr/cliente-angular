@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -36,15 +37,16 @@ export class OrganizationDetailComponent implements OnInit {
     private deptService = inject(DepartmentService);
     private confirmService = inject(ConfirmationService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    organization: any = null;
-    loading = true;
+    organization = signal<any>(null);
+    loading = signal(true);
     organizationId!: number;
 
-    departments: any[] = [];
-    deptLoading = true;
-    deptDialogVisible = false;
-    deptEditMode = false;
+    departments = signal<any[]>([]);
+    deptLoading = signal(true);
+    deptDialogVisible = signal(false);
+    deptEditMode = signal(false);
     deptForm: any = this.emptyDeptForm();
     deptMenuItems: MenuItem[] = [];
 
@@ -55,37 +57,29 @@ export class OrganizationDetailComponent implements OnInit {
     }
 
     loadOrganization() {
-        this.loading = true;
-        this.orgService.find(this.organizationId).subscribe({
-            next: (data: any) => {
-                this.organization = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message ?? err.message });
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.orgService.find(this.organizationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => { this.organization.set(data); this.loading.set(false); },
+                error: (err: any) => { this.showError(err); this.loading.set(false); }
+            });
     }
 
     loadDepartments() {
-        this.deptLoading = true;
-        this.deptService.byOrganization(this.organizationId).subscribe({
-            next: (data: any[]) => {
-                this.departments = data;
-                this.deptLoading = false;
-            },
-            error: (err: any) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message ?? err.message });
-                this.deptLoading = false;
-            }
-        });
+        this.deptLoading.set(true);
+        this.deptService.byOrganization(this.organizationId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any[]) => { this.departments.set(data); this.deptLoading.set(false); },
+                error: (err: any) => { this.showError(err); this.deptLoading.set(false); }
+            });
     }
 
     openCreateDept() {
         this.deptForm = { ...this.emptyDeptForm(), organizationId: this.organizationId };
-        this.deptEditMode = false;
-        this.deptDialogVisible = true;
+        this.deptEditMode.set(false);
+        this.deptDialogVisible.set(true);
     }
 
     openEditDept(dept: any) {
@@ -95,23 +89,23 @@ export class OrganizationDetailComponent implements OnInit {
             description: dept.description,
             organizationId: this.organizationId
         };
-        this.deptEditMode = true;
-        this.deptDialogVisible = true;
+        this.deptEditMode.set(true);
+        this.deptDialogVisible.set(true);
     }
 
     saveDept() {
-        const request = this.deptEditMode
+        const request = this.deptEditMode()
             ? this.deptService.update(this.deptForm)
             : this.deptService.create(this.deptForm);
 
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data: any) => {
                 this.messageService.add({
                     severity: 'success',
-                    summary: this.deptEditMode ? 'Updated' : 'Created',
-                    detail: `${data.departmentName} ${this.deptEditMode ? 'updated' : 'saved'}`
+                    summary: this.deptEditMode() ? 'Updated' : 'Created',
+                    detail: `${data.departmentName} ${this.deptEditMode() ? 'updated' : 'saved'}`
                 });
-                this.deptDialogVisible = false;
+                this.deptDialogVisible.set(false);
                 this.loadDepartments();
             },
             error: (err: any) => this.showError(err)
@@ -126,13 +120,15 @@ export class OrganizationDetailComponent implements OnInit {
             acceptButtonProps: { severity: 'danger', label: 'Delete' },
             rejectButtonProps: { severity: 'secondary', label: 'Cancel', outlined: true },
             accept: () => {
-                this.deptService.delete(dept.departmentId).subscribe({
-                    next: () => {
-                        this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Department deleted' });
-                        this.loadDepartments();
-                    },
-                    error: (err: any) => this.showError(err)
-                });
+                this.deptService.delete(dept.departmentId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Department deleted' });
+                            this.loadDepartments();
+                        },
+                        error: (err: any) => this.showError(err)
+                    });
             }
         });
     }

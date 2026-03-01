@@ -1,4 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -19,9 +20,10 @@ export class DepartmentDetailComponent implements OnInit {
     private route = inject(ActivatedRoute);
     private deptService = inject(DepartmentService);
     private messageService = inject(MessageService);
+    private destroyRef = inject(DestroyRef);
 
-    department: any = null;
-    loading = true;
+    department = signal<any>(null);
+    loading = signal(true);
     departmentId!: number;
 
     ngOnInit() {
@@ -30,16 +32,15 @@ export class DepartmentDetailComponent implements OnInit {
     }
 
     loadDepartment() {
-        this.loading = true;
-        this.deptService.find(this.departmentId).subscribe({
-            next: (data: any) => {
-                this.department = data;
-                this.loading = false;
-            },
-            error: (err: any) => {
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message ?? err.message });
-                this.loading = false;
-            }
-        });
+        this.loading.set(true);
+        this.deptService.find(this.departmentId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (data: any) => { this.department.set(data); this.loading.set(false); },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message ?? err.message });
+                    this.loading.set(false);
+                }
+            });
     }
 }
