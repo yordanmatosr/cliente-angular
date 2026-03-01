@@ -1,0 +1,51 @@
+.org-link {
+    color: var(--p-primary-color);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+        color: var(--p-primary-700);
+        text-decoration: underline;
+    }
+}
+
+.org-logo-container {
+    width: 140px;
+    height: 140px;
+    border: 2px dashed var(--p-content-border-color);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.org-logo-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.org-logo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.logo-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--p-primary-color);
+    border-radius: var(--p-content-border-radius);
+    color: var(--p-primary-color);
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: var(--p-primary-50);
+    }
+}

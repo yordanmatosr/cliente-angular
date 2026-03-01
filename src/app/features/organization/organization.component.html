@@ -1,4 +1,202 @@
-<div class="card">
-    <h4>Organization</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-confirmDialog />
+<p-menu #actionMenu [model]="menuItems" [popup]="true" />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">Companies</span>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="New Company" icon="pi pi-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="organizations"
+    [loading]="loading"
+    dataKey="organizationId"
+    [globalFilterFields]="['organizationName', 'location', 'description']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    sortMode="multiple"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="organizationName">Name <p-sortIcon field="organizationName" /></th>
+            <th pSortableColumn="location">Location <p-sortIcon field="location" /></th>
+            <th pSortableColumn="description">Description <p-sortIcon field="description" /></th>
+            <th style="width: 8rem">Status</th>
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-org>
+        <tr>
+            <td>
+                <a [routerLink]="['agency-detail', org.organizationId]" class="org-link">
+                    {{ org.organizationName }}
+                </a>
+            </td>
+            <td>{{ org.location }}</td>
+            <td>{{ org.description }}</td>
+            <td>
+                @if (org.isDisabled) {
+                    <p-tag value="Disabled" severity="danger" />
+                }
+            </td>
+            <td>
+                <p-button
+                    icon="pi pi-ellipsis-h"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="setMenuItems(org); actionMenu.toggle($event)"
+                />
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td colspan="5" class="text-center py-8 text-muted-color">No companies found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editMode ? 'Edit Company' : 'New Company'"
+    [modal]="true"
+    [style]="{ width: '640px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-5 pt-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Company Name <span class="text-red-400">*</span></label>
+                <input pInputText [(ngModel)]="form.organizationName" maxlength="254" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Location</label>
+                <input pInputText [(ngModel)]="form.location" maxlength="254" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Subscription Model</label>
+                <p-select
+                    [(ngModel)]="form.orgSubscriptionModel"
+                    [options]="subscriptionModels"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select model"
+                    styleClass="w-full"
+                />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+                <label class="font-medium">Description</label>
+                <textarea pTextarea [(ngModel)]="form.description" rows="5" maxlength="254" class="w-full"></textarea>
+            </div>
+            <div class="flex flex-col items-center gap-3">
+                <label class="font-medium self-start">Logo</label>
+                <div class="org-logo-container">
+                    @if (logoPreview) {
+                        <img [src]="logoPreview" alt="Company logo" class="org-logo-preview" />
+                    } @else {
+                        <div class="org-logo-placeholder">
+                            <i class="pi pi-image text-4xl text-muted-color"></i>
+                        </div>
+                    }
+                </div>
+                <label class="logo-upload-btn">
+                    <i class="pi pi-upload mr-1"></i> Select logo
+                    <input type="file" accept="image/*" (change)="onLogoSelect($event)" class="hidden" />
+                </label>
+                <small class="text-muted-color">Max 400kb</small>
+            </div>
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button
+            [label]="editMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="save()"
+            [disabled]="!form.organizationName?.trim()"
+        />
+    </ng-template>
+</p-dialog>
+
+<!-- Exam URLs Dialog -->
+<p-dialog
+    [(visible)]="examUrlDialogVisible"
+    [header]="(selectedOrg?.organizationName ?? '') + ' — Exam URLs'"
+    [modal]="true"
+    [style]="{ width: '520px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    <div class="flex gap-2 mb-4">
+        <p-button label="Send email" icon="pi pi-envelope" size="small" [outlined]="true" (onClick)="openSendEmail()" />
+        <p-button label="Download PDF" icon="pi pi-download" size="small" [outlined]="true" (onClick)="downloadPdf()" />
+    </div>
+
+    @if (examUrlLoading) {
+        <div class="flex justify-center py-8">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <p-table [value]="examList" dataKey="examName" [paginator]="examList.length > 10" [rows]="10">
+            <ng-template #header>
+                <tr><th>Exam</th></tr>
+            </ng-template>
+            <ng-template #body let-exam>
+                <tr>
+                    <td>
+                        <a [href]="exam.url" target="_blank" rel="noopener noreferrer" class="org-link">
+                            {{ exam.examName }}
+                        </a>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+                <tr><td class="text-center text-muted-color py-4">No exam URLs available.</td></tr>
+            </ng-template>
+        </p-table>
+    }
+</p-dialog>
+
+<!-- Send Email Dialog -->
+<p-dialog
+    [(visible)]="sendEmailDialogVisible"
+    header="Send email"
+    [modal]="true"
+    [style]="{ width: '380px' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-2 pt-2">
+        <label class="font-medium">Email address</label>
+        <input pInputText [(ngModel)]="emailAddress" type="email" placeholder="recipient@example.com" />
+    </div>
+    <ng-template #footer>
+        <p-button label="Close" severity="secondary" [outlined]="true" (onClick)="sendEmailDialogVisible = false" />
+        <p-button label="Send" icon="pi pi-send" [loading]="sendingEmail" [disabled]="!emailAddress" (onClick)="sendEmail()" />
+    </ng-template>
+</p-dialog>
