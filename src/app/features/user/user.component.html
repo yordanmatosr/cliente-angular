@@ -1,4 +1,245 @@
-<div class="card">
-    <h4>User</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+<p-menu #actionMenu [model]="menuItems" [popup]="true" />
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-4">
+    <ng-template #start>
+        <span class="text-xl font-semibold">Users</span>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="New User" icon="pi pi-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Table -->
+<p-table
+    #dt
+    [value]="users"
+    [loading]="loading"
+    dataKey="userId"
+    [globalFilterFields]="['username', 'email', 'firstname', 'lastname', 'department.departmentName']"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    sortMode="multiple"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template #caption>
+        <div class="flex justify-end">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+
+    <ng-template #header>
+        <tr>
+            <th pSortableColumn="username">Username <p-sortIcon field="username" /></th>
+            <th pSortableColumn="email">Email <p-sortIcon field="email" /></th>
+            <th pSortableColumn="firstname">Full Name <p-sortIcon field="firstname" /></th>
+            <th pSortableColumn="roles">Role <p-sortIcon field="roles" /></th>
+            <th pSortableColumn="department.departmentName">Department <p-sortIcon field="department.departmentName" /></th>
+            @if (isSuper) {
+                <th pSortableColumn="department.organization.organizationName">Company <p-sortIcon field="department.organization.organizationName" /></th>
+            }
+            <th style="width: 4rem"></th>
+        </tr>
+    </ng-template>
+
+    <ng-template #body let-user>
+        <tr [class.opacity-50]="user.isDisabled">
+            <td>{{ user.username }}</td>
+            <td>
+                <a [href]="'mailto:' + user.email" class="user-link">{{ user.email }}</a>
+            </td>
+            <td>{{ user.firstname }} {{ user.middlename }} {{ user.lastname }}</td>
+            <td>
+                <p-tag
+                    [value]="user.roles?.[0]?.toUpperCase()"
+                    [severity]="roleSeverity(user.roles?.[0])"
+                />
+            </td>
+            <td>{{ user.department?.departmentName }}</td>
+            @if (isSuper) {
+                <td>{{ user.department?.organization?.organizationName }}</td>
+            }
+            <td>
+                <p-button
+                    icon="pi pi-ellipsis-h"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="setMenuItems(user); actionMenu.toggle($event)"
+                />
+            </td>
+        </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+        <tr>
+            <td [attr.colspan]="isSuper ? 7 : 6" class="text-center py-8 text-muted-color">No users found.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create / Edit Dialog -->
+<p-dialog
+    [(visible)]="dialogVisible"
+    [header]="editMode ? 'Edit User' : 'New User'"
+    [modal]="true"
+    [style]="{ width: '680px' }"
+    [breakpoints]="{ '768px': '95vw' }"
+    [draggable]="false"
+>
+    @if (optionsLoading) {
+        <div class="flex justify-center py-8">
+            <p-progressspinner />
+        </div>
+    } @else {
+        <div class="flex flex-col gap-4 pt-2">
+
+            <!-- Name row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">First Name <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.firstname" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Middle Name</label>
+                    <input pInputText [(ngModel)]="form.middlename" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Last Name</label>
+                    <input pInputText [(ngModel)]="form.lastname" maxlength="20" />
+                </div>
+            </div>
+
+            <!-- Account row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Email <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.email" type="email" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Username <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.username" maxlength="50" autocomplete="username" />
+                </div>
+            </div>
+
+            <!-- Address + Role row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Address <span class="text-red-400">*</span></label>
+                    <input pInputText [(ngModel)]="form.address" maxlength="255" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="font-medium">Role <span class="text-red-400">*</span></label>
+                    <p-select
+                        [(ngModel)]="form.role"
+                        [options]="availableRoles"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select role"
+                        styleClass="w-full"
+                    />
+                </div>
+            </div>
+
+            <!-- Company + Department (hidden for super role) -->
+            @if (!isFormRoleSuper) {
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="font-medium">Company <span class="text-red-400">*</span></label>
+                        <p-select
+                            [(ngModel)]="form.organizationId"
+                            [options]="allOrganizations"
+                            optionLabel="organizationName"
+                            optionValue="organizationId"
+                            placeholder="Select company"
+                            styleClass="w-full"
+                            (onChange)="onOrgChange()"
+                        />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-medium">Department <span class="text-red-400">*</span></label>
+                        <p-select
+                            [(ngModel)]="form.department"
+                            [options]="filteredDepartments"
+                            optionLabel="departmentName"
+                            optionValue="departmentId"
+                            placeholder="Select department"
+                            styleClass="w-full"
+                            [disabled]="!form.organizationId"
+                        />
+                    </div>
+                </div>
+            }
+
+            <!-- 2FA -->
+            <div class="flex items-center gap-2">
+                <p-checkbox [(ngModel)]="form.isTwoFactorEnabled" [binary]="true" inputId="2fa-user" />
+                <label for="2fa-user" class="cursor-pointer">Two Factor Authentication</label>
+            </div>
+
+        </div>
+    }
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="dialogVisible = false" />
+        <p-button
+            [label]="editMode ? 'Update' : 'Add'"
+            icon="pi pi-check"
+            (onClick)="save()"
+            [disabled]="optionsLoading || !form.firstname?.trim() || !form.email?.trim() || !form.username?.trim()"
+        />
+    </ng-template>
+</p-dialog>
+
+<!-- Reset Password Dialog -->
+<p-dialog
+    [(visible)]="resetPasswordVisible"
+    [header]="'Reset password — ' + (resetTarget?.username ?? '')"
+    [modal]="true"
+    [style]="{ width: '360px' }"
+    [draggable]="false"
+>
+    <div class="flex flex-col gap-4 pt-2">
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">New Password</label>
+            <p-password
+                [(ngModel)]="newPassword"
+                [feedback]="false"
+                [toggleMask]="true"
+                styleClass="w-full"
+                autocomplete="new-password"
+            />
+            @if (newPassword && newPassword.length <= 3) {
+                <small class="text-red-500">Password too short</small>
+            }
+        </div>
+        <div class="flex flex-col gap-1">
+            <label class="font-medium">Confirm Password</label>
+            <p-password
+                [(ngModel)]="confirmPassword"
+                [feedback]="false"
+                [toggleMask]="true"
+                styleClass="w-full"
+                autocomplete="new-password"
+            />
+            @if (confirmPassword && newPassword !== confirmPassword) {
+                <small class="text-red-500">Passwords do not match</small>
+            }
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <p-button label="Cancel" severity="secondary" [outlined]="true" (onClick)="resetPasswordVisible = false" />
+        <p-button
+            label="Reset Password"
+            icon="pi pi-key"
+            [loading]="resetting"
+            [disabled]="!resetPasswordValid"
+            (onClick)="doResetPassword()"
+        />
+    </ng-template>
+</p-dialog>
