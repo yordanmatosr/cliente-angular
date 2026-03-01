@@ -1,4 +1,162 @@
-<div class="card">
-    <h4>Profile</h4>
-    <p>Coming soon.</p>
-</div>
+<p-toast />
+
+@if (loading) {
+    <div class="flex justify-center py-16">
+        <p-progressspinner />
+    </div>
+}
+
+@if (!loading && userData) {
+    <div class="flex flex-col gap-4">
+
+        <!-- Profile Info (read-only) -->
+        <p-card>
+            <ng-template #header>
+                <div class="flex items-center gap-3 p-4 pb-0">
+                    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-lg font-bold">
+                        {{ userData.firstname?.charAt(0)?.toUpperCase() ?? '?' }}
+                    </div>
+                    <div>
+                        <div class="text-lg font-semibold">{{ fullName }}</div>
+                        <div class="text-muted-color text-sm">{{ userData.email }}</div>
+                    </div>
+                    <p-tag
+                        [value]="userData.roles?.[0] | titlecase"
+                        severity="info"
+                        styleClass="ml-auto"
+                    />
+                </div>
+            </ng-template>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                <!-- Personal info -->
+                <div>
+                    <div class="text-xs font-semibold text-muted-color uppercase tracking-wide mb-3">Personal Information</div>
+                    <table class="w-full text-sm">
+                        <tbody>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium w-32">First Name</td>
+                                <td class="py-2">{{ userData.firstname }}</td>
+                            </tr>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium">Middle Name</td>
+                                <td class="py-2">{{ userData.middlename }}</td>
+                            </tr>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium">Last Name</td>
+                                <td class="py-2">{{ userData.lastname }}</td>
+                            </tr>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium">Email</td>
+                                <td class="py-2">
+                                    <a [href]="'mailto:' + userData.email" class="text-primary">{{ userData.email }}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 pr-4 text-muted-color font-medium">Address</td>
+                                <td class="py-2">{{ userData.address }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Account + Department info -->
+                <div>
+                    <div class="text-xs font-semibold text-muted-color uppercase tracking-wide mb-3">Account Information</div>
+                    <table class="w-full text-sm">
+                        <tbody>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium w-32">Username</td>
+                                <td class="py-2">{{ userData.username }}</td>
+                            </tr>
+                            <tr class="border-b border-surface-100">
+                                <td class="py-2 pr-4 text-muted-color font-medium">Role</td>
+                                <td class="py-2">{{ userData.roles?.[0] | titlecase }}</td>
+                            </tr>
+                            @if (userData.department) {
+                                <tr class="border-b border-surface-100">
+                                    <td class="py-2 pr-4 text-muted-color font-medium">Department</td>
+                                    <td class="py-2">{{ userData.department.departmentName }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 text-muted-color font-medium">Company</td>
+                                    <td class="py-2">{{ userData.department.organization?.organizationName }}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </p-card>
+
+        <!-- Edit Profile -->
+        <p-card header="Edit Profile">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">First Name <span class="text-red-500">*</span></label>
+                    <input pInputText [(ngModel)]="form.firstname" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">Middle Name</label>
+                    <input pInputText [(ngModel)]="form.middlename" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">Last Name</label>
+                    <input pInputText [(ngModel)]="form.lastname" maxlength="20" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">Email <span class="text-red-500">*</span></label>
+                    <input pInputText type="email" [(ngModel)]="form.email" />
+                </div>
+                <div class="flex flex-col gap-1 md:col-span-2">
+                    <label class="text-sm font-medium">Address</label>
+                    <input pInputText [(ngModel)]="form.address" />
+                </div>
+                @if (isUser) {
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium">Phone</label>
+                        <input pInputText type="tel" [(ngModel)]="form.phoneNumber" />
+                    </div>
+                }
+            </div>
+            <div class="flex justify-end mt-4">
+                <p-button
+                    label="Save Changes"
+                    icon="pi pi-check"
+                    [loading]="saving"
+                    [disabled]="!form.firstname || !form.email"
+                    (onClick)="saveProfile()"
+                />
+            </div>
+        </p-card>
+
+        <!-- Change Password -->
+        <p-card header="Change Password">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">Current Password</label>
+                    <p-password [(ngModel)]="pwdForm.oldPassword" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">New Password</label>
+                    <p-password [(ngModel)]="pwdForm.newPassword" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium">Confirm New Password</label>
+                    <p-password [(ngModel)]="pwdForm.confirmPassword" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" />
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <p-button
+                    label="Change Password"
+                    icon="pi pi-lock"
+                    severity="secondary"
+                    [loading]="savingPwd"
+                    [disabled]="!pwdForm.oldPassword || !pwdForm.newPassword || !pwdForm.confirmPassword"
+                    (onClick)="changePassword()"
+                />
+            </div>
+        </p-card>
+
+    </div>
+}

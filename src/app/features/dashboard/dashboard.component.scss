@@ -1,0 +1,8 @@
+.stat-card {
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:hover {
+        border-color: var(--p-primary-color);
+        box-shadow: 0 0 0 1px var(--p-primary-color);
+    }
+}
