@@ -1,0 +1,48 @@
+<div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-y-auto py-4">
+    <div class="flex flex-col items-center justify-center">
+        <div class="login-card-wrapper">
+            <div class="login-card bg-surface-0 dark:bg-surface-900 w-full px-8 sm:px-20">
+
+                <div class="text-center mb-8">
+                    <img src="/img/scoreit_logo.svg" alt="eScoreIT" class="login-logo" />
+                </div>
+
+                <div class="text-center mb-6">
+                    <h4 class="text-surface-900 dark:text-surface-0 font-bold text-2xl mb-1">Forgot your username?</h4>
+                    <span class="text-muted-color text-sm">Enter your email and we'll send you your username.</span>
+                </div>
+
+                @if (errorMessage) {
+                    <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-4" />
+                }
+
+                <label for="email" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
+                <input
+                    pInputText
+                    id="email"
+                    type="email"
+                    placeholder="Email address"
+                    class="w-full mb-6"
+                    [(ngModel)]="email"
+                    (keyup.enter)="send()"
+                />
+
+                <p-button
+                    label="Send Username"
+                    icon="pi pi-envelope"
+                    styleClass="w-full"
+                    [loading]="loading"
+                    [disabled]="!email"
+                    (onClick)="send()"
+                />
+
+                <div class="text-center mt-5">
+                    <a routerLink="/auth/login" class="login-link">
+                        <i class="pi pi-arrow-left text-xs mr-1"></i>Back to Login
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
