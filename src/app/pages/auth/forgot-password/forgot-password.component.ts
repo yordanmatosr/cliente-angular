@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
-import { UserService } from '../../core/services/user.service';
+import { UserService } from '../../../core/services/user.service';
 
 @Component({
     selector: 'app-forgot-password',

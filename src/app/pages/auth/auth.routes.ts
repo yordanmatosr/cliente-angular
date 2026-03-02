@@ -1,14 +1,14 @@
 import { Routes } from '@angular/router';
-import { AccessComponent } from './access.component';
-import { LoginComponent } from './login.component';
-import { ErrorComponent } from './error.component';
-import { DirectLoginComponent } from './direct-login.component';
-import { KioskLoginComponent } from './kiosk-login.component';
-import { ForgotPasswordComponent } from './forgot-password.component';
-import { ForgotUsernameComponent } from './forgot-username.component';
-import { ConfirmMailComponent } from './confirm-mail.component';
-import { PasswordResetComponent } from './password-reset.component';
-import { LoginOtpComponent } from './login-otp.component';
+import { AccessComponent } from './access/access.component';
+import { LoginComponent } from './login/login.component';
+import { ErrorComponent } from './error/error.component';
+import { DirectLoginComponent } from './direct-login/direct-login.component';
+import { KioskLoginComponent } from './kiosk-login/kiosk-login.component';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
+import { ForgotUsernameComponent } from './forgot-username/forgot-username.component';
+import { ConfirmMailComponent } from './confirm-mail/confirm-mail.component';
+import { PasswordResetComponent } from './password-reset/password-reset.component';
+import { LoginOtpComponent } from './login-otp/login-otp.component';
 
 export default [
     { path: 'login', component: LoginComponent },

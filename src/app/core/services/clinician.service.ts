@@ -5,12 +5,12 @@ import { environment } from '../../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class ClinicianService {
     private http = inject(HttpClient);
-    private readonly API = `${environment.apiUrl}/tester`;
+    private readonly API = `${environment.apiUrl}/user`;
 
-    all() { return this.http.get<any[]>(this.API); }
-    find(id: number) { return this.http.get<any>(`${this.API}/${id}`); }
-    create(clinician: any) { return this.http.post<any>(this.API, clinician); }
-    update(clinician: any) { return this.http.put<any>(this.API, clinician); }
+    all() { return this.http.get<any[]>(`${this.API}/testers`); }
+    find(id: number) { return this.http.get<any>(`${this.API}/tester/${id}`); }
+    create(clinician: any) { return this.http.post<any>(`${this.API}/tester`, clinician); }
+    update(clinician: any) { return this.http.put<any>(`${this.API}/tester`, clinician); }
     delete(id: number) { return this.http.delete<void>(`${this.API}/${id}`); }
-    byUser(id: number) { return this.http.get<any[]>(`${this.API}/byuser/${id}`); }
+    byDepartment(departmentId: number) { return this.http.get<any[]>(`${this.API}/testers/bydepartment/${departmentId}`); }
 }

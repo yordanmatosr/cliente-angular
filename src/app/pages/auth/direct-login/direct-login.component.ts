@@ -4,8 +4,8 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
-import { AuthService } from '../../core/services/auth.service';
-import { IdleService } from '../../core/services/idle.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { IdleService } from '../../../core/services/idle.service';
 
 @Component({
     selector: 'app-direct-login',

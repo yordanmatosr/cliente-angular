@@ -5,8 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
-import { AuthService } from '../../core/services/auth.service';
-import { IdleService } from '../../core/services/idle.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { IdleService } from '../../../core/services/idle.service';
 
 const RESEND_COOLDOWN = 60;
 

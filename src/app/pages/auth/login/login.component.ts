@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -7,8 +7,10 @@ import { PasswordModule } from 'primeng/password';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MessageModule } from 'primeng/message';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../core/services/auth.service';
-import { IdleService } from '../../core/services/idle.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { timeout, TimeoutError } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
+import { IdleService } from '../../../core/services/idle.service';
 
 const REASON_MESSAGES: Record<string, string> = {
     expired:         'Your session has expired. Please log in again.',
@@ -31,15 +33,15 @@ export class LoginComponent {
 
     username = '';
     password = '';
-    loading = false;
-    errorMessage = REASON_MESSAGES[this.route.snapshot.queryParams['reason']] ?? '';
+    loading = signal(false);
+    errorMessage = signal(REASON_MESSAGES[this.route.snapshot.queryParams['reason']] ?? '');
 
     login(): void {
         if (!this.username || !this.password) return;
-        this.loading = true;
-        this.errorMessage = '';
+        this.loading.set(true);
+        this.errorMessage.set('');
 
-        this.auth.login(this.username, this.password).subscribe({
+        this.auth.login(this.username, this.password).pipe(timeout(10_000)).subscribe({
             next: (data: any) => {
                 if (data?.accessToken) {
                     this.idle.start();
@@ -51,9 +53,13 @@ export class LoginComponent {
                     });
                 }
             },
-            error: () => {
-                this.errorMessage = 'Invalid username or password.';
-                this.loading = false;
+            error: (err) => {
+                if (err instanceof TimeoutError || (err instanceof HttpErrorResponse && err.status === 0)) {
+                    this.errorMessage.set('Cannot connect to the server. Please verify the server is running.');
+                } else {
+                    this.errorMessage.set('Invalid username or password.');
+                }
+                this.loading.set(false);
             }
         });
     }

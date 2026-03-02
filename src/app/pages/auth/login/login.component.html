@@ -7,8 +7,8 @@
                     <img src="/img/scoreit_logo.svg" alt="eScoreIT" class="login-logo" />
                 </div>
 
-                @if (errorMessage) {
-                    <p-message severity="error" [text]="errorMessage" styleClass="w-full mb-4" />
+                @if (errorMessage()) {
+                    <p-message severity="error" [text]="errorMessage()" styleClass="w-full mb-4" />
                 }
 
                 <div>
@@ -22,7 +22,7 @@
                                     [toggleMask]="true" styleClass="mb-6" [fluid]="true" [feedback]="false" />
                     </div>
 
-                    <p-button label="Log In" styleClass="w-full" [loading]="loading" (onClick)="login()" />
+                    <p-button label="Log In" styleClass="w-full" [loading]="loading()" (onClick)="login()" />
 
                     <div class="flex justify-between mt-5">
                         <a routerLink="/auth/forgot-password" class="login-link">Forgot Password?</a>
