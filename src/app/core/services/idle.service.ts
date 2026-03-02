@@ -24,7 +24,7 @@ export class IdleService {
             .pipe(debounceTime(IDLE_TIMEOUT_MS), takeUntil(this.destroy$))
             .subscribe(() => {
                 this.stop();
-                this.auth.logout();
+                this.auth.logout('idle');
             });
     }
 

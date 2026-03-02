@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -9,6 +9,12 @@ import { MessageModule } from 'primeng/message';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { IdleService } from '../../core/services/idle.service';
+
+const REASON_MESSAGES: Record<string, string> = {
+    expired:         'Your session has expired. Please log in again.',
+    unauthenticated: 'Please log in to continue.',
+    idle:            'You were logged out due to inactivity.',
+};
 
 @Component({
     selector: 'app-login',
@@ -21,11 +27,12 @@ export class LoginComponent {
     private auth = inject(AuthService);
     private idle = inject(IdleService);
     private router = inject(Router);
+    private route = inject(ActivatedRoute);
 
     username = '';
     password = '';
     loading = false;
-    errorMessage = '';
+    errorMessage = REASON_MESSAGES[this.route.snapshot.queryParams['reason']] ?? '';
 
     login(): void {
         if (!this.username || !this.password) return;

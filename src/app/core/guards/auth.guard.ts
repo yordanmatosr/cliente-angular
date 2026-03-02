@@ -7,8 +7,10 @@ export const authGuard: CanActivateFn = () => {
     const router = inject(Router);
 
     if (!auth.isLoggedIn()) {
+        const wasLoggedIn = !!auth.currentUser();
         auth.clearUser();
-        return router.createUrlTree(['/auth/login']);
+        const reason = wasLoggedIn ? 'expired' : 'unauthenticated';
+        return router.createUrlTree(['/auth/login'], { queryParams: { reason } });
     }
 
     return true;

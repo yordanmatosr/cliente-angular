@@ -112,14 +112,17 @@ export class AuthService {
         this._currentUser.set(null);
     }
 
-    logout(): void {
+    logout(reason?: string): void {
         this.clearUser();
-        this.router.navigate(['/auth/login']);
+        this.router.navigate(['/auth/login'], reason ? { queryParams: { reason } } : {});
     }
 
     private saveUser(user: CurrentUser): void {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        this._currentUser.set(user);
+        // Backend sends jwtExpirationMs as duration (e.g. 86400000 = 24h).
+        // Convert to absolute Unix expiry timestamp for isTokenExpired() comparison.
+        const stored = { ...user, jwtExpirationMs: Date.now() + user.jwtExpirationMs };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        this._currentUser.set(stored);
     }
 
     private loadFromStorage(): CurrentUser | null {
