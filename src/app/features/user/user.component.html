@@ -7,7 +7,14 @@
         <span class="text-xl font-semibold">Users</span>
     </ng-template>
     <ng-template #end>
-        <p-button label="New User" icon="pi pi-plus" (onClick)="openCreate()" />
+        <div class="flex items-center gap-2">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Search" />
+            </p-iconfield>
+            <p-button label="Clear" severity="secondary" [outlined]="true" (onClick)="clearFilter()" />
+            <p-button label="+ New" (onClick)="openCreate()" />
+        </div>
     </ng-template>
 </p-toolbar>
 
@@ -22,17 +29,9 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     sortMode="multiple"
-    styleClass="p-datatable-gridlines"
+    styleClass="p-datatable-striped"
+    [rowHover]="true"
 >
-    <ng-template #caption>
-        <div class="flex justify-end">
-            <p-iconfield>
-                <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-
     <ng-template #header>
         <tr>
             <th pSortableColumn="username">Username <p-sortIcon field="username" /></th>
@@ -48,13 +47,9 @@
     </ng-template>
 
     <ng-template #body let-user>
-        <tr [class.opacity-50]="user.isDisabled">
-            <td>
-                <a [routerLink]="['/user/user-detail', user.userId]" class="text-primary hover:underline">{{ user.username }}</a>
-            </td>
-            <td>
-                <a [href]="'mailto:' + user.email" class="user-link">{{ user.email }}</a>
-            </td>
+        <tr class="cursor-pointer" [class.opacity-50]="user.isDisabled" (click)="goToDetail(user)">
+            <td class="font-medium">{{ user.username }}</td>
+            <td>{{ user.email }}</td>
             <td>{{ user.firstname }} {{ user.middlename }} {{ user.lastname }}</td>
             <td>
                 <p-tag
@@ -66,7 +61,7 @@
             @if (isSuper()) {
                 <td>{{ user.department?.organization?.organizationName }}</td>
             }
-            <td>
+            <td (click)="$event.stopPropagation()">
                 <p-button
                     icon="pi pi-ellipsis-h"
                     [text]="true"

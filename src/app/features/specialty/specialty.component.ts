@@ -2,7 +2,7 @@ import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -39,6 +39,7 @@ import { forkJoin } from 'rxjs';
 export class SpecialtyComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
 
+    private router = inject(Router);
     private specialtyService = inject(SpecialtyService);
     private clinicianTypeService = inject(ClinicianTypeService);
     private profDesService = inject(ProfDesignationTypeService);
@@ -48,6 +49,7 @@ export class SpecialtyComponent implements OnInit {
 
     specialties = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
 
     dialogVisible = signal(false);
     editMode = signal(false);
@@ -156,8 +158,17 @@ export class SpecialtyComponent implements OnInit {
         });
     }
 
+    goToDetail(specialty: any) {
+        this.router.navigate(['/specialty/specialty-detail', specialty.specialtyId]);
+    }
+
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
     }
 
     setMenuItems(specialty: any) {

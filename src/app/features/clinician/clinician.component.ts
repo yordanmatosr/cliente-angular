@@ -2,7 +2,7 @@ import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -47,6 +47,7 @@ import { USER_STATUS_INFO, DEFAULT_PASSWORD } from '../../core/constants/status.
 export class ClinicianComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
 
+    private router = inject(Router);
     private clinicianService = inject(ClinicianService);
     private clinicianTypeService = inject(ClinicianTypeService);
     private orgService = inject(OrganizationService);
@@ -59,6 +60,7 @@ export class ClinicianComponent implements OnInit {
 
     clinicians = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
 
     dialogVisible = signal(false);
     editMode = signal(false);
@@ -247,8 +249,17 @@ export class ClinicianComponent implements OnInit {
         return this.STATUS_INFO[status] ?? { label: 'Unknown', severity: 'secondary' };
     }
 
+    goToDetail(c: any) {
+        this.router.navigate(['/tester/clinician-detail', c.clinicianId]);
+    }
+
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
     }
 
     setMenuItems(c: any) {

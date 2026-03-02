@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -41,6 +41,7 @@ import { MAX_LOGO_SIZE_BYTES } from '../../core/constants/status.constants';
 export class OrganizationComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
 
+    private router = inject(Router);
     private orgService = inject(OrganizationService);
     private fileService = inject(FileService);
     private emailService = inject(EmailService);
@@ -50,6 +51,7 @@ export class OrganizationComponent implements OnInit {
 
     organizations = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
 
     // Form dialog
     dialogVisible = signal(false);
@@ -276,8 +278,17 @@ export class OrganizationComponent implements OnInit {
         return doc;
     }
 
+    goToDetail(org: any) {
+        this.router.navigate(['/agency/agency-detail', org.organizationId]);
+    }
+
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
     }
 
     setMenuItems(org: any) {

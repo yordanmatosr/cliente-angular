@@ -8,7 +8,14 @@
         <span class="text-xl font-semibold">Specialties</span>
     </ng-template>
     <ng-template #end>
-        <p-button label="New Specialty" icon="pi pi-plus" (onClick)="openCreate()" />
+        <div class="flex items-center gap-2">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Search" />
+            </p-iconfield>
+            <p-button label="Clear" severity="secondary" [outlined]="true" (onClick)="clearFilter()" />
+            <p-button label="+ New" (onClick)="openCreate()" />
+        </div>
     </ng-template>
 </p-toolbar>
 
@@ -24,17 +31,9 @@
     [rowsPerPageOptions]="[10, 25, 50]"
     [defaultSortOrder]="-1"
     sortField="countClinicians"
-    styleClass="p-datatable-gridlines"
+    styleClass="p-datatable-striped"
+    [rowHover]="true"
 >
-    <ng-template #caption>
-        <div class="flex justify-end">
-            <p-iconfield>
-                <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-
     <ng-template #header>
         <tr>
             <th pSortableColumn="specialtyDescription">Specialty Name <p-sortIcon field="specialtyDescription" /></th>
@@ -44,12 +43,10 @@
     </ng-template>
 
     <ng-template #body let-specialty>
-        <tr>
-            <td>
-                <a [routerLink]="['/specialty/specialty-detail', specialty.specialtyId]" class="text-primary hover:underline">{{ specialty.specialtyDescription }}</a>
-            </td>
+        <tr class="cursor-pointer" (click)="goToDetail(specialty)">
+            <td class="font-medium">{{ specialty.specialtyDescription }}</td>
             <td>{{ specialty.countClinicians ?? 0 }}</td>
-            <td>
+            <td (click)="$event.stopPropagation()">
                 <p-button
                     icon="pi pi-ellipsis-h"
                     [text]="true"

@@ -23,6 +23,13 @@ const EScoreITPreset = definePreset(Aura, {
             900: '#0d2857',
             950: '#081a3d'
         }
+    },
+    components: {
+        datatable: {
+            row: {
+                hoverBackground: '#dbeafe'
+            }
+        }
     }
 });
 

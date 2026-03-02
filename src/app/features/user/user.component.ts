@@ -2,7 +2,7 @@ import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -45,6 +45,7 @@ import { DEFAULT_PASSWORD } from '../../core/constants/status.constants';
 export class UserComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
 
+    private router = inject(Router);
     private userService = inject(UserService);
     private roleService = inject(RoleService);
     private orgService = inject(OrganizationService);
@@ -55,6 +56,7 @@ export class UserComponent implements OnInit {
 
     users = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
     isSuper = signal(false);
 
     dialogVisible = signal(false);
@@ -267,8 +269,17 @@ export class UserComponent implements OnInit {
         return this.ROLE_SEVERITY[role] ?? 'secondary';
     }
 
+    goToDetail(user: any) {
+        this.router.navigate(['/user/user-detail', user.userId]);
+    }
+
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
     }
 
     setMenuItems(user: any) {
