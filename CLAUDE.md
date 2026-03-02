@@ -18,6 +18,11 @@ npx ng build                          # Build de producción
 npx ng generate component path/name --standalone  # Generar componente
 ```
 
+## Git
+
+- Hacer commit cuando se pida o al terminar una tarea significativa.
+- **Nunca hacer `git push`** — el push lo hace el usuario.
+
 ## Convenciones de componentes
 
 **Cada componente Angular debe estar en su propio directorio con tres archivos separados:**
