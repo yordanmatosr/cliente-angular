@@ -12,7 +12,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { SpecialtyService } from '../../core/services/specialty.service';
-import { UserService } from '../../core/services/user.service';
 import { ADMIN_ROLES } from '../../core/constants/roles.constants';
 
 @Component({
@@ -30,7 +29,6 @@ export class DashboardComponent implements OnInit {
     private dashboardService = inject(DashboardService);
     private orgService = inject(OrganizationService);
     private specialtyService = inject(SpecialtyService);
-    private userService = inject(UserService);
     private router = inject(Router);
     private destroyRef = inject(DestroyRef);
 
@@ -59,33 +57,29 @@ export class DashboardComponent implements OnInit {
     }
 
     private loadAdminDashboard(userId: number) {
-        this.userService.find(userId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (userData: any) => {
-                    const orgId = userData.department?.organization?.organizationId;
-                    if (!orgId) { this.loading.set(false); return; }
-
-                    forkJoin({
-                        summary:     this.dashboardService.adminSummary(orgId),
-                        sinceLogin:  this.orgService.testersCompletedFromLastLogin(orgId),
-                        assessments: this.specialtyService.specialtyExamsStatistic(),
-                        specialties: this.specialtyService.statistic()
-                    })
-                    .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe({
-                        next: ({ summary, sinceLogin, assessments, specialties }) => {
-                            this.adminSummary.set(summary);
-                            this.completedSinceLogin.set(sinceLogin ?? 0);
-                            this.assessmentStats.set(Array.isArray(assessments) ? assessments : []);
-                            this.buildSpecialtyChart(specialties);
-                            this.loading.set(false);
-                        },
-                        error: () => this.loading.set(false)
-                    });
-                },
-                error: () => this.loading.set(false)
-            });
+        // All endpoints take userId — the backend resolves org context internally
+        forkJoin({
+            summary:     this.dashboardService.adminSummary(userId),
+            sinceLogin:  this.orgService.testersCompletedFromLastLogin(userId),
+            assessments: this.specialtyService.specialtyExamsStatistic(),
+            specialties: this.specialtyService.statistic()
+        })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+            next: ({ summary, sinceLogin, assessments, specialties }) => {
+                this.adminSummary.set(summary);
+                this.completedSinceLogin.set(sinceLogin ?? 0);
+                // totalcompletionpercen is not in the server response — compute it client-side
+                const statsWithPercent = (Array.isArray(assessments) ? assessments : []).map((row: any) => {
+                    const total = (row.examsNew ?? 0) + (row.examsInProgress ?? 0) + (row.examsCompleted ?? 0);
+                    return { ...row, totalcompletionpercen: total > 0 ? (row.examsCompleted * 100 / total) : 0 };
+                });
+                this.assessmentStats.set(statsWithPercent);
+                this.buildSpecialtyChart(specialties);
+                this.loading.set(false);
+            },
+            error: () => this.loading.set(false)
+        });
     }
 
     private loadUserDashboard(userId: number) {
