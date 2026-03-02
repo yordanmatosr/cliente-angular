@@ -62,9 +62,7 @@ export class SpecialtyDetailComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (data: any[]) => {
-                    const filtered = data.filter(c =>
-                        c.specialtyResponses?.some((s: any) => s.specialtyId === this.specialtyId)
-                    );
+                    const filtered = data.filter(c => c.specialtyId === this.specialtyId);
                     this.clinicians.set(filtered);
                     this.clinicianLoading.set(false);
                 },
@@ -73,8 +71,7 @@ export class SpecialtyDetailComponent implements OnInit {
     }
 
     fullName(c: any): string {
-        const u = c?.userResponse;
-        return [u?.firstname, u?.middlename, u?.lastname].filter(Boolean).join(' ');
+        return [c?.firstname, c?.middlename, c?.lastname].filter(Boolean).join(' ');
     }
 
     statusInfo(status: number) {

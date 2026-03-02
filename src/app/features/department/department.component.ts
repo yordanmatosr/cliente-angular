@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, ViewChild, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -40,6 +40,7 @@ import { ROLE } from '../../core/constants/roles.constants';
 export class DepartmentComponent implements OnInit {
     @ViewChild('dt') dt!: Table;
 
+    private router = inject(Router);
     private deptService = inject(DepartmentService);
     private orgService = inject(OrganizationService);
     private authService = inject(AuthService);
@@ -49,6 +50,7 @@ export class DepartmentComponent implements OnInit {
 
     departments = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
     organizations = signal<any[]>([]);
     isSuper = signal(false);
 
@@ -145,6 +147,15 @@ export class DepartmentComponent implements OnInit {
 
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
+    }
+
+    goToDetail(dept: any) {
+        this.router.navigate(['/group/group-detail', dept.departmentId]);
     }
 
     setMenuItems(dept: any) {

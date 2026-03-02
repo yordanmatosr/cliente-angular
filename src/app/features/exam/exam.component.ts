@@ -48,6 +48,7 @@ export class ExamComponent implements OnInit {
 
     exams = signal<any[]>([]);
     loading = signal(true);
+    searchValue = '';
     userId = 0;
 
     termsVisible = signal(false);
@@ -149,6 +150,11 @@ export class ExamComponent implements OnInit {
 
     onGlobalFilter(event: Event) {
         this.dt.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    clearFilter() {
+        this.searchValue = '';
+        this.dt.filterGlobal('', 'contains');
     }
 
     private showError(err: any) {

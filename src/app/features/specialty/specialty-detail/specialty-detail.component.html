@@ -47,8 +47,9 @@
     } @else {
         <p-table
             [value]="clinicians()"
-            dataKey="clinicianId"
-            styleClass="p-datatable-sm"
+            dataKey="userId"
+            styleClass="p-datatable-striped p-datatable-sm"
+            [rowHover]="true"
         >
             <ng-template #header>
                 <tr>
@@ -64,13 +65,13 @@
                 <tr>
                     <td>{{ fullName(c) }}</td>
                     <td>
-                        <a [href]="'mailto:' + c.userResponse?.email" class="text-primary">{{ c.userResponse?.email }}</a>
+                        <a [href]="'mailto:' + c.email" class="text-primary">{{ c.email }}</a>
                     </td>
-                    <td>{{ c.userResponse?.department?.departmentName || '—' }}</td>
+                    <td>{{ c.departmentName || '—' }}</td>
                     <td>
                         <p-tag
-                            [value]="statusInfo(c.userResponse?.status).label"
-                            [severity]="statusInfo(c.userResponse?.status).severity"
+                            [value]="statusInfo(c.status).label"
+                            [severity]="statusInfo(c.status).severity"
                         />
                     </td>
                     <td>
@@ -79,7 +80,7 @@
                             [text]="true"
                             [rounded]="true"
                             pTooltip="View detail"
-                            [routerLink]="['/tester/clinician-detail', c.clinicianId]"
+                            [routerLink]="['/tester/clinician-detail', c.userId]"
                         />
                     </td>
                 </tr>

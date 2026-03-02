@@ -10,7 +10,8 @@
         [globalFilterFields]="['organizationName', 'description']"
         [paginator]="true"
         [rows]="5"
-        styleClass="p-datatable-gridlines mb-4"
+        styleClass="p-datatable-striped p-datatable-sm mb-4"
+        [rowHover]="true"
     >
         <ng-template #caption>
             <div class="flex justify-between items-center">
@@ -73,7 +74,8 @@
         [rows]="10"
         [rowsPerPageOptions]="[10, 25, 50]"
         sortMode="multiple"
-        styleClass="p-datatable-gridlines"
+        styleClass="p-datatable-striped"
+        [rowHover]="true"
     >
         <ng-template #caption>
             <div class="flex justify-between items-center flex-wrap gap-2">

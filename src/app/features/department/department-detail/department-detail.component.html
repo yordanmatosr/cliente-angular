@@ -41,7 +41,8 @@
         <p-table
             [value]="clinicians()"
             dataKey="userId"
-            styleClass="p-datatable-sm"
+            styleClass="p-datatable-striped p-datatable-sm"
+            [rowHover]="true"
         >
             <ng-template #header>
                 <tr>

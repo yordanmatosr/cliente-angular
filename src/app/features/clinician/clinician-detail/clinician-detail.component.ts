@@ -52,7 +52,7 @@ export class ClinicianDetailComponent implements OnInit {
                 next: (data: any) => {
                     this.clinician.set(data);
                     this.loading.set(false);
-                    this.loadExams(data.userResponse?.userId);
+                    this.loadExams(data.userId);
                 },
                 error: (err: any) => { this.showError(err); this.loading.set(false); }
             });
@@ -70,12 +70,7 @@ export class ClinicianDetailComponent implements OnInit {
     }
 
     fullName(c: any): string {
-        const u = c?.userResponse;
-        return [u?.firstname, u?.middlename, u?.lastname].filter(Boolean).join(' ');
-    }
-
-    specialtyNames(c: any): string {
-        return c?.specialtyResponses?.map((s: any) => s.specialtyDescription).join(', ') || '—';
+        return [c?.firstname, c?.middlename, c?.lastname].filter(Boolean).join(' ');
     }
 
     statusInfo(status: number) {
@@ -87,7 +82,7 @@ export class ClinicianDetailComponent implements OnInit {
     }
 
     goToReport(exam: any) {
-        const userId = this.clinician()?.userResponse?.userId;
+        const userId = this.clinician()?.userId;
         const examType = exam.examType?.toLowerCase() ?? 'exam';
         this.router.navigate(['/exam/report', exam.examId, userId, exam.clinicianAssessmentId, examType]);
     }

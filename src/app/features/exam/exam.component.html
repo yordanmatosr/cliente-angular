@@ -6,6 +6,15 @@
     <ng-template #start>
         <span class="text-xl font-semibold">My Exams</span>
     </ng-template>
+    <ng-template #end>
+        <div class="flex items-center gap-2">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Search" />
+            </p-iconfield>
+            <p-button label="Clear" severity="secondary" [outlined]="true" (onClick)="clearFilter()" />
+        </div>
+    </ng-template>
 </p-toolbar>
 
 <!-- Table -->
@@ -19,17 +28,9 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     sortMode="multiple"
-    styleClass="p-datatable-gridlines"
+    styleClass="p-datatable-striped"
+    [rowHover]="true"
 >
-    <ng-template #caption>
-        <div class="flex justify-end">
-            <p-iconfield>
-                <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-
     <ng-template #header>
         <tr>
             <th pSortableColumn="clinicianAssessmentId">Report ID <p-sortIcon field="clinicianAssessmentId" /></th>

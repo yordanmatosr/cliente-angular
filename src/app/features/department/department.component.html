@@ -8,7 +8,14 @@
         <span class="text-xl font-semibold">Departments</span>
     </ng-template>
     <ng-template #end>
-        <p-button label="New Department" icon="pi pi-plus" (onClick)="openCreate()" />
+        <div class="flex items-center gap-2">
+            <p-iconfield>
+                <p-inputicon styleClass="pi pi-search" />
+                <input pInputText type="text" [(ngModel)]="searchValue" (input)="onGlobalFilter($event)" placeholder="Search" />
+            </p-iconfield>
+            <p-button label="Clear" severity="secondary" [outlined]="true" (onClick)="clearFilter()" />
+            <p-button label="+ New" (onClick)="openCreate()" />
+        </div>
     </ng-template>
 </p-toolbar>
 
@@ -23,17 +30,9 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     sortMode="multiple"
-    styleClass="p-datatable-gridlines"
+    styleClass="p-datatable-striped"
+    [rowHover]="true"
 >
-    <ng-template #caption>
-        <div class="flex justify-end">
-            <p-iconfield>
-                <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter($event)" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-
     <ng-template #header>
         <tr>
             <th pSortableColumn="departmentName">Name <p-sortIcon field="departmentName" /></th>
@@ -44,15 +43,11 @@
     </ng-template>
 
     <ng-template #body let-dept>
-        <tr>
-            <td>
-                <a [routerLink]="['/group/group-detail', dept.departmentId]" class="dept-link">
-                    {{ dept.departmentName }}
-                </a>
-            </td>
+        <tr class="cursor-pointer" (click)="goToDetail(dept)">
+            <td class="font-medium">{{ dept.departmentName }}</td>
             <td>{{ dept.description }}</td>
             <td>{{ dept.organization?.organizationName }}</td>
-            <td>
+            <td (click)="$event.stopPropagation()">
                 <p-button
                     icon="pi pi-ellipsis-h"
                     [text]="true"
