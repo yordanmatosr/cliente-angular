@@ -2,11 +2,12 @@ import { Component, inject, OnInit, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { TableModule } from 'primeng/table';
 import { ChartModule } from 'primeng/chart';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { InputTextModule } from 'primeng/inputtext';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -18,8 +19,8 @@ import { ADMIN_ROLES } from '../../core/constants/roles.constants';
     selector: 'app-dashboard',
     standalone: true,
     imports: [
-        CommonModule, DecimalPipe,
-        ButtonModule, CardModule, TableModule, ChartModule, ProgressSpinnerModule
+        CommonModule, DecimalPipe, FormsModule,
+        ButtonModule, TableModule, ChartModule, ProgressSpinnerModule, InputTextModule
     ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss'
@@ -44,6 +45,9 @@ export class DashboardComponent implements OnInit {
 
     // User view
     userSummary = signal<any>(null);
+
+    // Table search
+    assessmentSearch = '';
 
     ngOnInit() {
         const user = this.authService.currentUser()!;
@@ -102,9 +106,10 @@ export class DashboardComponent implements OnInit {
             }]
         });
         this.specialtyChartOptions.set({
-            cutout: '60%',
+            cutout: '55%',
             responsive: true,
-            plugins: { legend: { position: 'bottom' } }
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
         });
     }
 

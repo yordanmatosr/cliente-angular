@@ -6,73 +6,123 @@
 
 <!-- Admin / superadmin / super view -->
 @if (!loading() && isAdmin()) {
+
     <!-- Summary cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
-            <div class="text-muted-color text-sm font-medium mb-3">Total Employees Tested</div>
-            <div class="text-4xl font-bold text-primary">{{ adminSummary()?.testedEmployee ?? 0 }}</div>
-        </div>
 
-        <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
-            <div class="text-muted-color text-sm font-medium mb-3">Pending Assessments</div>
-            <div class="text-4xl font-bold" style="color: var(--p-orange-500)">
-                {{ adminSummary()?.pendingAssessment ?? 0 }}
+        <div class="card flex items-center gap-4">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 shrink-0">
+                <i class="pi pi-users text-3xl text-teal-500"></i>
+            </div>
+            <div>
+                <div class="text-muted-color text-sm font-medium">Total Employee Tested</div>
+                <div class="text-4xl font-bold text-teal-500 mt-1">{{ adminSummary()?.testedEmployee ?? 0 }}</div>
             </div>
         </div>
 
-        <div class="p-5 bg-surface-0 border border-surface-200 rounded-xl">
-            <div class="text-muted-color text-sm font-medium mb-3">Completed Assessments</div>
-            <div class="text-4xl font-bold text-green-600">{{ adminSummary()?.completedAssessment ?? 0 }}</div>
-            @if (completedSinceLogin() > 0) {
-                <div class="text-xs text-green-600 mt-2">+{{ completedSinceLogin() }} since last login</div>
-            }
+        <div class="card flex items-center gap-4">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 shrink-0">
+                <i class="pi pi-hourglass text-3xl text-orange-500"></i>
+            </div>
+            <div>
+                <div class="text-muted-color text-sm font-medium">Total Assessment Pending</div>
+                <div class="text-4xl font-bold text-orange-500 mt-1">{{ adminSummary()?.pendingAssessment ?? 0 }}</div>
+            </div>
         </div>
+
+        <div class="card flex items-center gap-4">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 shrink-0">
+                <i class="pi pi-file-check text-3xl text-green-500"></i>
+            </div>
+            <div>
+                <div class="text-muted-color text-sm font-medium">Total Assessments Completed</div>
+                <div class="text-4xl font-bold text-green-500 mt-1">{{ adminSummary()?.completedAssessment ?? 0 }}</div>
+                @if (completedSinceLogin() > 0) {
+                    <div class="text-xs text-green-600 mt-1">+{{ completedSinceLogin() }} since last login</div>
+                }
+            </div>
+        </div>
+
     </div>
 
-    <!-- Assessment stats table + Specialty chart -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <p-card header="Assessment Statistics">
-            <p-table [value]="assessmentStats()" styleClass="p-datatable-sm">
-                <ng-template #header>
-                    <tr>
-                        <th>Specialty</th>
-                        <th class="text-center" style="width:5rem">New</th>
-                        <th class="text-center" style="width:6rem">In Progress</th>
-                        <th class="text-center" style="width:6rem">Completed</th>
-                        <th class="text-center" style="width:4rem">%</th>
-                    </tr>
-                </ng-template>
-                <ng-template #body let-row>
-                    <tr>
-                        <td>{{ row.description }}</td>
-                        <td class="text-center">{{ row.examsNew }}</td>
-                        <td class="text-center">{{ row.examsInProgress }}</td>
-                        <td class="text-center">{{ row.examsCompleted }}</td>
-                        <td class="text-center">
-                            <span
-                                [class.text-green-600]="row.totalcompletionpercen >= 80"
-                                [class.text-orange-500]="row.totalcompletionpercen >= 50 && row.totalcompletionpercen < 80"
-                                [class.text-red-600]="row.totalcompletionpercen < 50"
-                                class="font-semibold"
-                            >
-                                {{ row.totalcompletionpercen | number:'1.0-0' }}%
-                            </span>
-                        </td>
-                    </tr>
-                </ng-template>
-                <ng-template #emptymessage>
-                    <tr>
-                        <td colspan="5" class="text-center py-4 text-muted-color">No data available.</td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </p-card>
+    <!-- Specialty chart — full width -->
+    @if (specialtyChartData() && specialtyChartData().labels.length > 0) {
+        <div class="card mb-6">
+            <h5 class="font-semibold text-lg mb-4 m-0">Specialty statistics</h5>
+            <div style="height: 380px">
+                <p-chart
+                    type="doughnut"
+                    [data]="specialtyChartData()"
+                    [options]="specialtyChartOptions()"
+                    [style]="{ height: '100%' }"
+                />
+            </div>
+        </div>
+    }
 
-        @if (specialtyChartData() && specialtyChartData().labels.length > 0) {
-            <p-card header="Clinicians by Specialty">
-                <p-chart type="doughnut" [data]="specialtyChartData()" [options]="specialtyChartOptions()" height="300" />
-            </p-card>
-        }
+    <!-- Assessment statistics — full width with search toolbar -->
+    <div class="card">
+        <div class="flex items-center justify-between mb-4">
+            <h5 class="font-semibold text-lg m-0">Assessment statistics</h5>
+            <div class="flex gap-2">
+                <input
+                    pInputText
+                    [(ngModel)]="assessmentSearch"
+                    (ngModelChange)="dt.filterGlobal($event, 'contains')"
+                    placeholder="Search"
+                    class="p-inputtext-sm"
+                />
+                <p-button
+                    label="Clear"
+                    severity="secondary"
+                    (onClick)="assessmentSearch = ''; dt.filterGlobal('', 'contains')"
+                />
+            </div>
+        </div>
+
+        <p-table
+            #dt
+            [value]="assessmentStats()"
+            [globalFilterFields]="['description']"
+            styleClass="p-datatable-striped p-datatable-sm"
+            [rowHover]="true"
+        >
+            <ng-template #header>
+                <tr>
+                    <th pSortableColumn="description">
+                        Category <p-sortIcon field="description" />
+                    </th>
+                    <th pSortableColumn="examsNew" class="text-right" style="width: 6rem">
+                        New <p-sortIcon field="examsNew" />
+                    </th>
+                    <th pSortableColumn="examsInProgress" class="text-right" style="width: 8rem">
+                        In progress <p-sortIcon field="examsInProgress" />
+                    </th>
+                    <th pSortableColumn="examsCompleted" class="text-right" style="width: 8rem">
+                        Completed <p-sortIcon field="examsCompleted" />
+                    </th>
+                    <th pSortableColumn="totalcompletionpercen" class="text-right" style="width: 11rem">
+                        Total completion % <p-sortIcon field="totalcompletionpercen" />
+                    </th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-row>
+                <tr>
+                    <td>{{ row.description }}</td>
+                    <td class="text-right">{{ row.examsNew }}</td>
+                    <td class="text-right">{{ row.examsInProgress }}</td>
+                    <td class="text-right">{{ row.examsCompleted }}</td>
+                    <td class="text-right">{{ row.totalcompletionpercen | number:'1.2-2' }}</td>
+                </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted-color">No data available.</td>
+                </tr>
+            </ng-template>
+        </p-table>
     </div>
 }
 
@@ -80,7 +130,7 @@
 @if (!loading() && !isAdmin()) {
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div
-            class="stat-card p-5 bg-surface-0 border border-surface-200 rounded-xl text-center cursor-pointer"
+            class="card p-5 text-center cursor-pointer"
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">Total</div>
@@ -88,7 +138,7 @@
         </div>
 
         <div
-            class="stat-card p-5 bg-surface-0 border border-surface-200 rounded-xl text-center cursor-pointer"
+            class="card p-5 text-center cursor-pointer"
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">New</div>
@@ -96,21 +146,19 @@
         </div>
 
         <div
-            class="stat-card p-5 bg-surface-0 border border-surface-200 rounded-xl text-center cursor-pointer"
+            class="card p-5 text-center cursor-pointer"
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">In Progress</div>
-            <div class="text-4xl font-bold" style="color: var(--p-orange-500)">
-                {{ userSummary()?.countInprogress ?? 0 }}
-            </div>
+            <div class="text-4xl font-bold text-orange-500">{{ userSummary()?.countInprogress ?? 0 }}</div>
         </div>
 
         <div
-            class="stat-card p-5 bg-surface-0 border border-surface-200 rounded-xl text-center cursor-pointer"
+            class="card p-5 text-center cursor-pointer"
             (click)="goToExams()"
         >
             <div class="text-muted-color text-xs font-medium mb-2">Completed</div>
-            <div class="text-4xl font-bold text-green-600">{{ userSummary()?.countCompleted ?? 0 }}</div>
+            <div class="text-4xl font-bold text-green-500">{{ userSummary()?.countCompleted ?? 0 }}</div>
         </div>
     </div>
 
