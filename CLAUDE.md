@@ -156,6 +156,36 @@ export class ExamService {
 | 8 | Reports + Charts + PDF/email | ✅ Completo |
 | 9 | Dashboard (charts), Profile, Contact/FAQ | ✅ Completo |
 
+## Mejoras pendientes en el backend
+
+Estas mejoras fueron identificadas durante la migración Angular. Se documentan aquí para coordinarse con el backend cuando corresponda.
+
+### 1. `GraphicSpecialtyExamsDTO` — agregar `totalcompletionpercen`
+- **Endpoint:** `GET /api/specialty/graphic_prof_designation_exams_stats`
+- **Problema:** El DTO no incluye `totalcompletionpercen`, así que el cliente lo calcula:
+  `examsCompleted * 100 / (examsNew + examsInProgress + examsCompleted)`
+- **Mejora:** Calcularlo server-side en `GraphicSpecialtyExamsDTO` para que el cliente no tenga que hacerlo.
+
+### 2. Dashboard — consolidar `testers_completed_from_last_login` en `DashboardResponse`
+- **Endpoints actuales:** `GET /api/dashboard/{userId}` + `GET /api/org/testers_completed_from_last_login/{userId}` (2 requests)
+- **Mejora:** Incluir el campo `testersCompletedSinceLogin` directamente en `DashboardResponse` para reducir a 1 request.
+
+### 3. `UserClinicianRequest/Response` — soporte multi-specialty
+- **Situación actual:** `UserClinicianRequest` tiene `specialtyId: Integer` (singular). `UserClinicianResponse` tiene `specialtyDescription: String` (solo una).
+- **Mejora:** Agregar `List<Integer> specialtiesRequest` al request y `List<SpecialtyResponse> specialtyResponses` al response para cuando un tester deba pertenecer a múltiples especialidades.
+- **Nota:** No implementar en el cliente Angular hasta que el backend lo soporte — actualmente se usa `p-select` simple.
+
+### 4. `UserClinicianRequest/Response` — agregar tipo de clínico (`typeId`)
+- **Situación actual:** El request/response de testers no incluye `typeId` ni `clinicianTypeResponse`.
+- **Mejora:** Agregar `typeId: Integer` al request y `clinicianType: ClinicianTypeResponse` al response si se quiere gestionar el tipo desde el CRUD de testers.
+- **Nota:** El campo fue removido del cliente Angular por no estar en el DTO — agregar solo cuando el backend lo soporte.
+
+### 5. Endpoints de gráficas (`graphic_prof_designation_*`) — filtrado por org para superadmin
+- **Situación actual:** `GET /api/specialty/graphic_prof_designation_*` devuelve datos globales (sin filtro de org).
+- **Mejora:** Para el rol `superadmin` (que gestiona una sola org), agregar un parámetro opcional `?orgId=` para que las gráficas del dashboard reflejen solo su organización.
+
+---
+
 ## Referencia al proyecto React original
 
 - Servicios: `/home/yordan/Work/projects/HCare/client/src/services/`
